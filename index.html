@@ -304,6 +304,27 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
 .theme-btn:hover{background:var(--s3);border-color:var(--b2)}
 .theme-btn svg{width:16px;height:16px;color:var(--t2)}
 
+
+/* CHART WIDGETS */
+.chart-widget{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px;position:relative;transition:box-shadow .2s;resize:both;overflow:auto;min-width:200px;min-height:120px}
+.chart-widget.dragging{opacity:.5;border:2px dashed var(--acc2)}
+.chart-widget.drag-over{border:2px dashed var(--acc2);background:rgba(37,99,235,.06)}
+.chart-widget.hidden{display:none}
+.chart-widget.size-sm canvas{max-height:100px}
+.chart-widget.size-md canvas{max-height:180px}
+.chart-widget.size-lg{grid-column:1/-1}
+.chart-widget.size-lg canvas{max-height:280px}
+.widget-hdr{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.widget-hdr>span:first-child{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;flex:1}
+.widget-actions{display:flex;align-items:center;gap:4px;flex-shrink:0}
+.wbtn{background:var(--s3);border:1px solid var(--b1);color:var(--t3);width:22px;height:22px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;font-family:var(--mono)}
+.wbtn:hover{background:var(--b2);color:var(--t1)}
+.wbtn-hide{color:var(--red);border-color:rgba(239,68,68,.3)}
+.wbtn-hide:hover{background:rgba(239,68,68,.15)}
+.chart-toggle-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:4px 10px;border-radius:20px;font-size:11px;cursor:pointer;transition:all .2s;font-family:var(--font)}
+.chart-toggle-btn:hover{border-color:var(--acc2);color:var(--acc3)}
+.chart-toggle-btn.hidden-btn{opacity:.4;text-decoration:line-through}
+
 </style>
 </head>
 <body>
@@ -389,31 +410,111 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
       <div class="dw">
         <div class="dh">
           <div><h1>Procurement Dashboard</h1><p id="dSub">Live — All Cases &amp; Contracts</p></div>
+          <button onclick="openEmailExport()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#059669,#047857);border:none;color:#fff;padding:8px 16px;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer;margin-right:8px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,12 2,6"/></svg>Email Report</button>
           <button onclick="openSendNotif()" style="display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:#fff;padding:8px 16px;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>Send Notification
           </button>
         </div>
         <div class="kpi-row" id="mgrKpis"></div>
-        <div class="charts-grid">
-          <div class="chart-card"><div class="chart-title">📊 Cases by Status</div><canvas id="chartStatus" height="150"></canvas></div>
-          <div class="chart-card"><div class="chart-title">👤 Cases by Officer</div><canvas id="chartOfficer" height="150"></canvas></div>
+
+        <!-- Dashboard toolbar -->
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <span style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px">Charts:</span>
+          <button class="chart-toggle-btn" data-target="widget-status" onclick="toggleWidget(this)">📊 Status</button>
+          <button class="chart-toggle-btn" data-target="widget-officer" onclick="toggleWidget(this)">👤 Officer Value</button>
+          <button class="chart-toggle-btn" data-target="widget-quarter" onclick="toggleWidget(this)">📅 Quarter</button>
+          <button class="chart-toggle-btn" data-target="widget-alerts" onclick="toggleWidget(this)">⚠️ Alerts</button>
+          <button class="chart-toggle-btn" data-target="widget-recent" onclick="toggleWidget(this)">🕐 Recent</button>
+          <button class="chart-toggle-btn" data-target="widget-stats" onclick="toggleWidget(this)">📈 Stats</button>
+          <span style="margin-left:auto;font-size:10px;color:var(--t3)">drag to reorder • resize from corner</span>
         </div>
-        <div class="charts-grid">
-          <div class="chart-card">
-            <div class="chart-title">📅 Cases by Quarter
-              <select id="qYearSel" onchange="drawQuarter()" style="background:var(--s3);border:1px solid var(--b2);color:var(--t2);padding:3px 8px;border-radius:6px;font-size:11px;outline:none">
-                <option value="all">All Years</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
-              </select>
+
+        <!-- Draggable chart grid -->
+        <div id="chartGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+
+          <div class="chart-widget" id="widget-status" draggable="true">
+            <div class="widget-hdr">
+              <span>📊 Cases by Status</span>
+              <span style="font-size:10px;color:var(--t3);font-weight:400">click a slice</span>
+              <div class="widget-actions">
+                <button class="wbtn" onclick="resizeWidget('widget-status','sm')" title="Small">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-status','md')" title="Medium">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-status','lg')" title="Large">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-status]'))" title="Hide">✕</button>
+              </div>
             </div>
-            <canvas id="chartQuarter" height="150"></canvas>
+            <canvas id="chartStatus" style="cursor:pointer" onclick="onStatusChartClick(event)"></canvas>
+            <div id="statusDetail" style="margin-top:10px;display:none"></div>
           </div>
-          <div class="chart-card"><div class="chart-title">⏱️ SLA Performance</div><canvas id="chartSLA" height="150"></canvas></div>
-        </div>
-        <div class="dgrid">
-          <div class="card"><div class="ct">Cases by Officer</div><div id="ownerList"></div></div>
-          <div class="card"><div class="ct">Contract Alerts</div><div id="contAlerts"></div></div>
-          <div class="card"><div class="ct">Recent Cases</div><div id="recentList"></div></div>
-          <div class="card"><div class="ct">Quick Stats</div><div class="qsgrid" id="qStats"></div></div>
+
+          <div class="chart-widget" id="widget-officer" draggable="true">
+            <div class="widget-hdr">
+              <span>👤 Cases by Officer (PR Value)</span>
+              <div class="widget-actions">
+                <button class="wbtn" onclick="resizeWidget('widget-officer','sm')">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-officer','md')">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-officer','lg')">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-officer]'))">✕</button>
+              </div>
+            </div>
+            <canvas id="chartOfficer"></canvas>
+          </div>
+
+          <div class="chart-widget" id="widget-quarter" draggable="true">
+            <div class="widget-hdr">
+              <span>📅 Cases by Quarter</span>
+              <div class="widget-actions">
+                <select id="qYearSel" onchange="drawQuarter()" style="background:var(--s3);border:1px solid var(--b2);color:var(--t2);padding:2px 7px;border-radius:6px;font-size:11px;outline:none;margin-right:6px">
+                  <option value="all">All Years</option><option value="2026">2026</option><option value="2025">2025</option><option value="2024">2024</option>
+                </select>
+                <button class="wbtn" onclick="resizeWidget('widget-quarter','sm')">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-quarter','md')">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-quarter','lg')">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-quarter]'))">✕</button>
+              </div>
+            </div>
+            <canvas id="chartQuarter"></canvas>
+          </div>
+
+          <div class="chart-widget" id="widget-alerts" draggable="true">
+            <div class="widget-hdr">
+              <span>⚠️ Contract Alerts</span>
+              <div class="widget-actions">
+                <button class="wbtn" onclick="resizeWidget('widget-alerts','sm')">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-alerts','md')">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-alerts','lg')">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-alerts]'))">✕</button>
+              </div>
+            </div>
+            <div id="contAlerts"></div>
+          </div>
+
+          <div class="chart-widget" id="widget-recent" draggable="true">
+            <div class="widget-hdr">
+              <span>🕐 Recent Cases</span>
+              <div class="widget-actions">
+                <button class="wbtn" onclick="resizeWidget('widget-recent','sm')">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-recent','md')">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-recent','lg')">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-recent]'))">✕</button>
+              </div>
+            </div>
+            <div id="recentList"></div>
+          </div>
+
+          <div class="chart-widget" id="widget-stats" draggable="true">
+            <div class="widget-hdr">
+              <span>📈 Quick Stats</span>
+              <div class="widget-actions">
+                <button class="wbtn" onclick="resizeWidget('widget-stats','sm')">S</button>
+                <button class="wbtn" onclick="resizeWidget('widget-stats','md')">M</button>
+                <button class="wbtn" onclick="resizeWidget('widget-stats','lg')">L</button>
+                <button class="wbtn wbtn-hide" onclick="toggleWidget(document.querySelector('[data-target=widget-stats]'))">✕</button>
+              </div>
+            </div>
+            <div class="qsgrid" id="qStats"></div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -657,6 +758,40 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
         <div id="mentionDrop" class="mention-dropdown" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px"></div>
       </div>
       <button class="comment-submit" onclick="submitComment()">Send</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- EMAIL EXPORT MODAL -->
+<div class="mo" id="emailMo">
+  <div class="modal" style="width:420px">
+    <div class="mhdr"><h3>📧 Email Excel Report</h3><button class="mcl" onclick="closeEmailMo()">✕</button></div>
+    <div class="mbody">
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="fg1">
+          <label class="flbl">Recipient Email *</label>
+          <input class="fi" id="emailTo" type="email" placeholder="e.g. saud.alamri@seven.sa"/>
+        </div>
+        <div class="fg1">
+          <label class="flbl">Subject</label>
+          <input class="fi" id="emailSubject" value="SEVEN Procurement Report"/>
+        </div>
+        <div class="fg1">
+          <label class="flbl">Message (optional)</label>
+          <textarea class="fta" id="emailBody" rows="3" placeholder="Please find attached the latest procurement report…"></textarea>
+        </div>
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:12px;font-size:12px;color:var(--t3)">
+          ⚠️ This will download the Excel file to your device. Then attach it manually to your email client.
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bcan" onclick="closeEmailMo()">Cancel</button>
+      <button class="bsav" style="background:linear-gradient(135deg,#059669,#047857)" onclick="doEmailExport()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download & Open Email
+      </button>
     </div>
   </div>
 </div>
@@ -905,6 +1040,8 @@ const CD={plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{
 
 function rDash(){
   if(!IS_MGR)return;
+  // Init drag on first render
+  if(!document.getElementById('chartGrid')?._dragInit){const g=document.getElementById('chartGrid');if(g)g._dragInit=true;initDrag();}
   const ps=DATA;
   const done=ps.filter(p=>p.case_status==='Done').length;
   const ongoing=ps.filter(p=>p.case_status==='Ongoing').length;
@@ -930,38 +1067,21 @@ function rDash(){
   charts.status=new Chart(document.getElementById('chartStatus'),{
     type:'doughnut',
     data:{labels:['Done','Ongoing','On Hold'],datasets:[{data:[done,ongoing,onhold],backgroundColor:['#10b98188','#f59e0b88','#94a3b888'],borderColor:['#10b981','#f59e0b','#94a3b8'],borderWidth:2}]},
-    options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:10}}},cutout:'60%'}
+    options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:10},padding:8}}},cutout:'65%'}
   });
+  document.getElementById('statusDetail').style.display='none';
 
-  // Officer bar
+  // Officer bar — by PR Value
+  const offPRVals=OFF.map(o=>ps.filter(p=>p.business_owner===o.name).reduce((s,p)=>s+(p.pr_value||0),0));
   charts.officer=new Chart(document.getElementById('chartOfficer'),{
     type:'bar',
-    data:{labels:OFF.map(o=>o.name),datasets:[{label:'Cases',data:OFF.map(o=>ps.filter(p=>p.business_owner===o.name).length),backgroundColor:OFF.map(o=>o.color+'88'),borderColor:OFF.map(o=>o.color),borderWidth:2,borderRadius:6}]},
-    options:{...CD,plugins:{legend:{display:false}}}
+    data:{labels:OFF.map(o=>o.name),datasets:[{label:'PR Value (SAR)',data:offPRVals,backgroundColor:OFF.map(o=>o.color+'88'),borderColor:OFF.map(o=>o.color),borderWidth:2,borderRadius:6}]},
+    options:{...CD,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>{const v=ctx.raw;return 'SAR '+(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v.toLocaleString());}}}},scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?(v/1e3).toFixed(0)+'K':v}}}}
   });
 
   drawQuarter();
 
-  // SLA performance
-  const slascores=OFF.map(o=>{
-    const cl=ps.filter(p=>p.business_owner===o.name&&p.case_status==='Done'&&p.pr_received_date&&p.updated_at);
-    if(!cl.length)return 0;
-    const avg=cl.map(p=>{const sd=getSLA(p.pr_value).days;const act=Math.max(1,Math.floor((new Date(p.updated_at)-new Date(p.pr_received_date))/86400000))-(p.hold_days||0);return Math.round(((sd-act)/sd)*100);});
-    return Math.round(avg.reduce((a,b)=>a+b,0)/avg.length);
-  });
-  charts.sla=new Chart(document.getElementById('chartSLA'),{
-    type:'bar',
-    data:{labels:OFF.map(o=>o.name),datasets:[{label:'SLA Score',data:slascores,backgroundColor:slascores.map(s=>s>=0?'#10b98188':'#ef444488'),borderColor:slascores.map(s=>s>=0?'#10b981':'#ef4444'),borderWidth:2,borderRadius:6}]},
-    options:{...CD,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.raw>0?ctx.raw+'% faster than SLA 🏆':Math.abs(ctx.raw)+'% slower ⚠️'}}},scales:{...CD.scales,y:{...CD.scales.y,ticks:{...CD.scales.y.ticks,callback:v=>v+'%'}}}}
-  });
 
-  // Officer list
-  document.getElementById('ownerList').innerHTML=OFF.map(o=>{
-    const m=ps.filter(p=>p.business_owner===o.name);
-    const dn2=m.filter(p=>p.case_status==='Done').length;
-    const pct=m.length?Math.round(dn2/m.length*100):0;
-    return`<div class="or"><div class="oav" style="background:${o.bg_color};color:${o.color}">${ini(o.name)}</div><div style="flex:1"><div class="on2">${o.name}</div><div class="pb"><div class="pf" style="width:${pct}%"></div></div></div><div class="osts"><span class="os tot">${m.length}</span><span class="os dn">${dn2}✓</span><span class="os og">${m.filter(p=>p.case_status==='Ongoing').length}↻</span></div></div>`;
-  }).join('');
 
   // Contract alerts
   const urg=CONTS.filter(c=>c._rd<=60).sort((a,b)=>a._rd-b._rd);
@@ -1644,6 +1764,161 @@ document.addEventListener('keydown',e=>{
   }
 });
 
+
+
+function onStatusChartClick(event){
+  const chart=charts.status;if(!chart)return;
+  const pts=chart.getElementsAtEventForMode(event,'nearest',{intersect:true},false);
+  if(!pts.length){document.getElementById('statusDetail').style.display='none';return;}
+  const idx=pts[0].index;
+  const labels=['Done','Ongoing','On Hold'];
+  const statuses=['Done','Ongoing','On-hold'];
+  const status=statuses[idx];
+  const label=labels[idx];
+  const colors=['#10b981','#f59e0b','#94a3b8'];
+  const filtered=DATA.filter(p=>p.case_status===status);
+  const byOff={};
+  filtered.forEach(p=>{
+    const o=p.business_owner||'Unknown';
+    if(!byOff[o])byOff[o]=[];
+    byOff[o].push(p);
+  });
+  const el=document.getElementById('statusDetail');
+  el.style.display='block';
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:${colors[idx]};margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--b1)">${label} — ${filtered.length} cases</div>`+
+    Object.entries(byOff).sort((a,b)=>b[1].length-a[1].length).map(([name,cases])=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--b1)">
+        <span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:${ob(name)};color:${oc(name)};align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${ini(name)}</span>
+        <span style="font-size:12px;color:var(--t1);flex:1">${name}</span>
+        <span style="font-size:11px;font-family:var(--mono);color:${colors[idx]};font-weight:700">${cases.length}</span>
+      </div>`).join('');
+}
+
+
+// ── EMAIL EXPORT ──
+function openEmailExport(){
+  document.getElementById('emailTo').value='';
+  document.getElementById('emailSubject').value='SEVEN Procurement Report — '+new Date().toLocaleDateString('en-SA',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('emailBody').value='';
+  document.getElementById('emailMo').classList.add('open');
+}
+function closeEmailMo(){document.getElementById('emailMo').classList.remove('open');}
+function doEmailExport(){
+  const to=document.getElementById('emailTo').value.trim();
+  const subject=document.getElementById('emailSubject').value.trim();
+  const body=document.getElementById('emailBody').value.trim();
+  if(!to){toast('Email address required','err');return;}
+  // Download Excel
+  exportExcel();
+  // Open email client
+  setTimeout(()=>{
+    const mailto='mailto:'+encodeURIComponent(to)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body||'Please find attached the latest procurement report.');
+    window.location.href=mailto;
+    closeEmailMo();
+    toast('Excel downloaded — attach it to your email ✓');
+  },500);
+}
+
+
+// ── WIDGET CONTROLS ──
+let dragSrc=null;
+
+function toggleWidget(btn){
+  if(!btn)return;
+  const targetId=btn.dataset?btn.dataset.target:btn.getAttribute('data-target');
+  const widget=document.getElementById(targetId);
+  if(!widget)return;
+  const isHidden=widget.classList.toggle('hidden');
+  btn.classList.toggle('hidden-btn',isHidden);
+  saveWidgetState();
+}
+
+function resizeWidget(id,size){
+  const w=document.getElementById(id);if(!w)return;
+  w.classList.remove('size-sm','size-md','size-lg');
+  w.classList.add('size-'+size);
+  // Redraw charts after resize
+  setTimeout(()=>{
+    Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}});
+  },50);
+  saveWidgetState();
+}
+
+// Drag to reorder
+document.addEventListener('DOMContentLoaded',()=>{
+  initDrag();
+  loadWidgetState();
+});
+
+function initDrag(){
+  const grid=document.getElementById('chartGrid');
+  if(!grid)return;
+  grid.addEventListener('dragstart',e=>{
+    const w=e.target.closest('.chart-widget');if(!w)return;
+    dragSrc=w;w.classList.add('dragging');
+    e.dataTransfer.effectAllowed='move';
+  });
+  grid.addEventListener('dragend',e=>{
+    const w=e.target.closest('.chart-widget');if(!w)return;
+    w.classList.remove('dragging');
+    document.querySelectorAll('.chart-widget').forEach(x=>x.classList.remove('drag-over'));
+    saveWidgetState();
+  });
+  grid.addEventListener('dragover',e=>{
+    e.preventDefault();e.dataTransfer.dropEffect='move';
+    const w=e.target.closest('.chart-widget');
+    if(w&&w!==dragSrc){
+      document.querySelectorAll('.chart-widget').forEach(x=>x.classList.remove('drag-over'));
+      w.classList.add('drag-over');
+    }
+  });
+  grid.addEventListener('drop',e=>{
+    e.preventDefault();
+    const w=e.target.closest('.chart-widget');
+    if(w&&w!==dragSrc&&dragSrc){
+      const grid=w.parentNode;
+      const children=[...grid.children];
+      const srcIdx=children.indexOf(dragSrc);
+      const dstIdx=children.indexOf(w);
+      if(srcIdx<dstIdx)grid.insertBefore(dragSrc,w.nextSibling);
+      else grid.insertBefore(dragSrc,w);
+      w.classList.remove('drag-over');
+      // Redraw charts
+      setTimeout(()=>{Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}});},100);
+      saveWidgetState();
+    }
+  });
+}
+
+function saveWidgetState(){
+  const state={};
+  document.querySelectorAll('.chart-widget').forEach(w=>{
+    state[w.id]={
+      hidden:w.classList.contains('hidden'),
+      size:w.classList.contains('size-lg')?'lg':w.classList.contains('size-sm')?'sm':'md',
+      order:[...document.getElementById('chartGrid').children].map(c=>c.id).indexOf(w.id)
+    };
+  });
+  try{localStorage.setItem('dashWidgets',JSON.stringify(state));}catch(e){}
+}
+
+function loadWidgetState(){
+  try{
+    const saved=localStorage.getItem('dashWidgets');
+    if(!saved)return;
+    const state=JSON.parse(saved);
+    const grid=document.getElementById('chartGrid');if(!grid)return;
+    // Apply sizes and visibility
+    Object.entries(state).forEach(([id,s])=>{
+      const w=document.getElementById(id);if(!w)return;
+      if(s.hidden){w.classList.add('hidden');const btn=document.querySelector('[data-target='+id+']');if(btn)btn.classList.add('hidden-btn');}
+      if(s.size&&s.size!=='md'){w.classList.remove('size-sm','size-md','size-lg');w.classList.add('size-'+s.size);}
+    });
+    // Restore order
+    const ordered=Object.entries(state).sort((a,b)=>a[1].order-b[1].order).map(([id])=>id);
+    ordered.forEach(id=>{const w=document.getElementById(id);if(w)grid.appendChild(w);});
+  }catch(e){}
+}
 
 // ── THEME TOGGLE ──
 function toggleTheme(){
