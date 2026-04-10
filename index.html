@@ -334,8 +334,22 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
   <div id="loadingTxt" style="font-size:14px;color:var(--t2)">Connecting…</div>
 </div>
 
+<!-- SITE PASSWORD SCREEN -->
+<div class="screen active" id="s-site">
+  <div class="login-box" style="max-width:380px">
+    <div class="login-logo">
+      <div class="login-badge">S7</div>
+      <div><div class="login-title">SEVEN Procurement</div><div class="login-sub">Restricted Access</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--t2);margin-bottom:18px;text-align:center">Enter site access code to continue</div>
+    <input class="lsel" type="password" id="sitePassInput" placeholder="Site access code" autocomplete="current-password" onkeydown="if(event.key==='Enter')checkSitePass()"/>
+    <button class="lbtn" onclick="checkSitePass()">Enter →</button>
+    <div id="sitePassErr" style="color:var(--red);font-size:12px;text-align:center;margin-top:10px;display:none">❌ Wrong code</div>
+  </div>
+</div>
+
 <!-- LOGIN -->
-<div class="screen active" id="s-login">
+<div class="screen" id="s-login">
   <div class="login-box">
     <div class="login-logo">
       <div class="login-badge">S7</div>
@@ -343,8 +357,18 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
     </div>
     <div style="font-size:12px;color:var(--t3);margin-bottom:12px;text-align:center">Select your profile</div>
     <div class="ogrid" id="ocards"></div>
+    <div id="officerPassWrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Password</div>
+      <input class="lsel" type="password" id="officerPassInput" placeholder="Enter your password" autocomplete="current-password" style="margin-bottom:0" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div id="officerPassErr" style="color:var(--red);font-size:11px;margin-top:5px;display:none">❌ Wrong password</div>
+    </div>
     <div class="divid">or</div>
     <select class="lsel" id="adminSel" onchange="onAdminSelChange()"><option value="">— Select —</option><option value="manager">Manager Account</option></select>
+    <div id="adminPassWrap" style="display:none;margin-bottom:14px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Manager Password</div>
+      <input class="lsel" type="password" id="adminPassInput" placeholder="Enter manager password" autocomplete="current-password" style="margin-bottom:0" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div id="adminPassErr" style="color:var(--red);font-size:11px;margin-top:5px;display:none">❌ Wrong password</div>
+    </div>
     <button class="lbtn" onclick="doLogin()">Continue →</button>
   </div>
 </div>
@@ -358,14 +382,12 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
       <button class="nbtn" id="n-dash" onclick="nav('dash',this)" style="display:none">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span>
       </button>
-      <button class="nbtn" id="n-proj" onclick="nav('proj',this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><span>Projects</span>
-      </button>
+
       <button class="nbtn" id="n-cont" onclick="nav('cont',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Contracts</span>
       </button>
       <button class="nbtn" id="n-mine" onclick="nav('mine',this)" style="display:none">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>My Cases</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span id="minNavLbl">My Cases</span>
       </button>
       <button class="nbtn" id="n-notifs" onclick="nav('notifs',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span>Notifications</span>
@@ -387,6 +409,7 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
     <div class="uchip">
       <div class="udot" id="udot"></div>
       <span class="uname" id="uname"></span>
+      <button class="logbtn" onclick="openChangePass()" title="Change password" style="font-size:13px">🔑</button>
       <button class="logbtn" onclick="doLogout()">✕</button>
     </div>
   </header>
@@ -519,39 +542,6 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
       </div>
     </div>
 
-    <!-- PROJECTS -->
-    <div class="page" id="page-proj">
-      <div class="tabs-bar">
-        <button class="tab active" onclick="ptab('all',this)">All <span class="tc" id="tc-all">—</span></button>
-        <button class="tab" onclick="ptab('done',this)">Done <span class="tc" id="tc-done">—</span></button>
-        <button class="tab" onclick="ptab('ongoing',this)">Ongoing <span class="tc" id="tc-on">—</span></button>
-        <button class="tab" onclick="ptab('hold',this)">On Hold <span class="tc" id="tc-h">—</span></button>
-      </div>
-      <div class="toolbar">
-        <div class="srch"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="pSrch" placeholder="Search…" oninput="rProj()"/></div>
-        <select class="fsel" id="pOwn" onchange="rProj()"><option value="">All Owners</option></select>
-        <select class="fsel" id="pBU" onchange="rProj()"><option value="">All BUs</option></select>
-        <select class="fsel" id="pCo" onchange="rProj()"><option value="">All Companies</option><option>SEVEN</option><option>SCC</option></select>
-        <span class="rct" id="pCt">—</span>
-        <button class="add-btn" id="exportBtn" onclick="exportExcel()" style="display:none;background:linear-gradient(135deg,#059669,#047857)">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
-        </button>
-        <button class="add-btn" onclick="openAddProj()">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Case
-        </button>
-      </div>
-      <div class="tbl-wrap"><table>
-        <thead><tr>
-          <th onclick="sortP('pr_number')">PR #</th><th onclick="sortP('case_status')">Status</th>
-          <th onclick="sortP('subject')">Subject</th><th onclick="sortP('business_owner')">Owner</th>
-          <th onclick="sortP('business_unit')">BU</th><th onclick="sortP('company')">Co</th>
-          <th onclick="sortP('proc_type')">Type</th><th onclick="sortP('pr_received_date')">PR Date</th>
-          <th onclick="sortP('pr_value')">PR Value</th><th onclick="sortP('po_value')">PO Value</th><th onclick="sortP('savings')">Savings</th>
-        </tr></thead>
-        <tbody id="pBody"></tbody>
-      </table></div>
-    </div>
-
     <!-- CONTRACTS -->
     <div class="page" id="page-cont">
       <div class="abar">
@@ -591,13 +581,20 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
       <div class="toolbar" style="border-top:1px solid var(--b1)">
         <div class="srch"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="mSrch" placeholder="Search…" oninput="rMine()"/></div>
         <select class="fsel" id="mSt" onchange="rMine()"><option value="">All Statuses</option><option>Done</option><option>Ongoing</option><option>On-hold</option></select>
+        <select class="fsel" id="mOwn" onchange="rMine()" style="display:none"><option value="">All Owners</option></select>
+        <button class="add-btn" id="mineExportBtn" onclick="exportExcel()" style="display:none;background:linear-gradient(135deg,#059669,#047857)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export
+        </button>
         <span class="rct" id="mCt">—</span>
         <button class="add-btn" onclick="openAddProj()">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>New Request
         </button>
+        <button class="add-btn" onclick="openHandover()" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 3a2.828 2.828 0 114 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>Handover
+        </button>
       </div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>PR #</th><th>Status</th><th>Subject</th><th>BU</th><th>Type</th><th>PR Date</th><th>PR Value</th><th>PO Value</th><th>Savings</th></tr></thead>
+        <thead><tr><th>PR #</th><th>Status</th><th>Subject</th><th id="mOwnerCol" style="display:none">Owner</th><th>BU</th><th>Type</th><th>PR Date</th><th>PR Value</th><th>PO Value</th><th>Savings</th></tr></thead>
         <tbody id="mBody"></tbody>
       </table></div>
     </div>
@@ -630,38 +627,6 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
         </div>
         <div id="officerCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px"></div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- PROJECT MODAL -->
-<div class="mo" id="projMo">
-  <div class="modal">
-    <div class="mhdr"><h3 id="projMoTitle">Add New Case</h3><button class="mcl" onclick="closeProjMo()">✕</button></div>
-    <div class="mbody">
-      <div class="fg">
-        <div class="fg1"><label class="flbl">PR #</label><input class="fi" id="f-pr" placeholder="e.g. 10008600"/></div>
-        <div class="fg1"><label class="flbl">Case Status</label><select class="fs" id="f-st"><option>Ongoing</option><option>Done</option><option>On-hold</option><option>Cancelled</option></select></div>
-        <div class="fg1 full"><label class="flbl">Subject *</label><input class="fi" id="f-sj" placeholder="e.g. Marketing Video Production"/></div>
-        <div class="fg1"><label class="flbl">Supplier Name</label><input class="fi" id="f-sp" placeholder="Vendor / Supplier"/></div>
-        <div class="fg1"><label class="flbl">Business Owner</label><select class="fs" id="f-ow"></select></div>
-        <div class="fg1"><label class="flbl">Business Unit</label><select class="fs" id="f-bu"><option>Commerical</option><option>Leasing</option><option>Brand &amp; Corporate</option><option>PR &amp; Communication</option><option>Media &amp; Digtal</option><option>Destination</option><option>Attraction Marketing</option><option>Internal Communication</option><option>Operations</option><option>IT</option><option>Logistics</option></select></div>
-        <div class="fg1"><label class="flbl">Company</label><select class="fs" id="f-co"><option>SEVEN</option><option>SCC</option></select></div>
-        <div class="fg1"><label class="flbl">Proc. Type</label><select class="fs" id="f-ty"><option>RFQ</option><option>RFP</option><option>RFI</option><option>TO</option><option>CR</option><option>Direct PO</option><option>PO &lt; 100K</option><option>SS &gt; 100K</option><option>Revenue Share</option></select></div>
-        <div class="fg1"><label class="flbl">PR Received Date</label><input class="fi" id="f-pd" type="date"/></div>
-        <div class="fg1"><label class="flbl">Year</label><select class="fs" id="f-yr"><option>2026</option><option>2025</option><option>2024</option></select></div>
-        <div class="fg1"><label class="flbl">PR Value (SAR)</label><input class="fi" id="f-pv" type="number" placeholder="0"/></div>
-        <div class="fg1"><label class="flbl">PO #</label><input class="fi" id="f-po" placeholder="e.g. 4500005600"/></div>
-        <div class="fg1"><label class="flbl">PO Signing Date</label><input class="fi" id="f-pd2" type="date"/></div>
-        <div class="fg1"><label class="flbl">PO Value (SAR)</label><input class="fi" id="f-pov" type="number" placeholder="0"/></div>
-        <div class="fg1"><label class="flbl">Savings (SAR)</label><input class="fi" id="f-sv" type="number" placeholder="0"/></div>
-        <div class="fg1 full"><label class="flbl">Status Notes</label><textarea class="fta" id="f-nt" placeholder="Status updates, notes…"></textarea></div>
-      </div>
-    </div>
-    <div class="mftr">
-      <button class="bdel" id="projDel" onclick="delProj()" style="display:none">Delete</button>
-      <button class="bcan" onclick="closeProjMo()">Cancel</button>
-      <button class="bsav" onclick="saveProj()">Save Case</button>
     </div>
   </div>
 </div>
@@ -796,6 +761,70 @@ body.light .log-icon{background:rgba(0,0,0,.06)}
   </div>
 </div>
 
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="mo" id="changePassMo">
+  <div class="modal" style="width:400px">
+    <div class="mhdr"><h3>🔑 Change Password</h3><button class="mcl" onclick="closeChangePass()">✕</button></div>
+    <div class="mbody">
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="fg1">
+          <label class="flbl">Current Password</label>
+          <input class="fi" type="password" id="cp-current" placeholder="Your current password"/>
+        </div>
+        <div class="fg1">
+          <label class="flbl">New Password</label>
+          <input class="fi" type="password" id="cp-new" placeholder="Min 4 characters"/>
+        </div>
+        <div class="fg1">
+          <label class="flbl">Confirm New Password</label>
+          <input class="fi" type="password" id="cp-confirm" placeholder="Repeat new password"/>
+        </div>
+        <div id="cpErr" style="color:var(--red);font-size:12px;display:none"></div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bcan" onclick="closeChangePass()">Cancel</button>
+      <button class="bsav" onclick="saveNewPass()">Save Password</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- HANDOVER MODAL -->
+<div class="mo" id="handoverMo">
+  <div class="modal" style="width:560px">
+    <div class="mhdr">
+      <h3>🔄 Handover My Cases</h3>
+      <button class="mcl" onclick="closeHandover()">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="fg" style="grid-template-columns:1fr 1fr;margin-bottom:16px">
+        <div class="fg1">
+          <label class="flbl">Hand over to *</label>
+          <select class="fs" id="ho-to"></select>
+        </div>
+        <div class="fg1">
+          <label class="flbl">Return Date</label>
+          <input class="fi" id="ho-date" type="date"/>
+        </div>
+        <div class="fg1 full">
+          <label class="flbl">General Note</label>
+          <textarea class="fta" id="ho-note" rows="2" placeholder="e.g. Please follow up on pending POs…"></textarea>
+        </div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Active Cases to Transfer</div>
+      <div id="ho-cases" style="max-height:300px;overflow-y:auto;border:1px solid var(--b1);border-radius:var(--r2)"></div>
+    </div>
+    <div class="mftr">
+      <button class="bcan" onclick="closeHandover()">Cancel</button>
+      <button class="bsav" style="background:linear-gradient(135deg,#f59e0b,#d97706)" onclick="doHandover()">
+        🔄 Transfer Cases
+      </button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script>
 const sb=supabase.createClient('https://mucgimjdtegxcycpsnwb.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Y2dpbWpkdGVneGN5Y3BzbndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MzA5MDIsImV4cCI6MjA5MTIwNjkwMn0.sRGMzXluEdwcdDSjnue9SJ2PIuxbmTdI8BIPh0UU3NY');
@@ -844,17 +873,14 @@ async function init(){
   buildLoginCards();loading(false);
 }
 
-function onAdminSelChange(){
-  const v=document.getElementById('adminSel').value;
-  if(v)document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));
-}
+// onAdminSelChange moved to password system below
 
 function buildLoginCards(){
   const g=document.getElementById('ocards');g.innerHTML='';
   OFF.forEach(o=>{
     const d=document.createElement('div');d.className='ocard';d.dataset.n=o.name;
     d.innerHTML=`<div class="ocard-av" style="background:${o.bg_color};color:${o.color}">${ini(o.name)}</div><div class="ocard-name">${o.name}</div><div style="font-size:10px;color:var(--t3)">Officer</div>`;
-    d.onclick=()=>{document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));d.classList.add('sel');document.getElementById('adminSel').value='';};
+    d.onclick=()=>onOfficerCardClick(o.name);
     g.appendChild(d);
   });
   const fw=document.getElementById('f-ow');fw.innerHTML='';
@@ -862,15 +888,7 @@ function buildLoginCards(){
 }
 
 // ── LOGIN / LOGOUT ──
-async function doLogin(){
-  const sel=document.querySelector('.ocard.sel'),adm=document.getElementById('adminSel').value;
-  if(!sel&&!adm){toast('Select a profile','err');return;}
-  CU=adm?'Manager':sel.dataset.n;IS_MGR=!!adm;
-  loading(true,'Loading data…');
-  await loadAll();
-  loading(false);
-  startApp();
-}
+// doLogin moved to password system below
 
 function doLogout(){
   // Switch screens immediately — no waiting
@@ -946,20 +964,18 @@ function startApp(){
   document.getElementById('n-mine').style.display=IS_MGR?'none':'flex';
   document.getElementById('n-logs').style.display=IS_MGR?'flex':'none';
   document.getElementById('n-officers').style.display=IS_MGR?'flex':'none';
-  document.getElementById('exportBtn').style.display=IS_MGR?'flex':'none';
+
   document.getElementById('mainKpiStrip').style.display=IS_MGR?'grid':'none';
 
-  // Filters
-  const pOwn=document.getElementById('pOwn');pOwn.innerHTML='<option value="">All Owners</option>';
-  OFF.forEach(o=>{const op=document.createElement('option');op.value=op.textContent=o.name;pOwn.appendChild(op);});
-  if(!IS_MGR){pOwn.value=CU;pOwn.disabled=true;}else pOwn.disabled=false;
-  const bus=[...new Set(DATA.map(p=>p.business_unit).filter(Boolean))].sort();
-  const pBU=document.getElementById('pBU');pBU.innerHTML='<option value="">All BUs</option>';
-  bus.forEach(b=>{const op=document.createElement('option');op.value=op.textContent=b;pBU.appendChild(op);});
+  // Populate owner filter in Cases page (for manager)
+  const mOwn=document.getElementById('mOwn');
+  if(mOwn){mOwn.innerHTML='<option value="">All Owners</option>';OFF.forEach(o=>{const op=document.createElement('option');op.value=op.textContent=o.name;mOwn.appendChild(op);});}
 
   calcKPIs();calcAlerts();
 
   // Navigate
+  // Update My Cases label
+  document.getElementById('minNavLbl').textContent=IS_MGR?'All Cases':'My Cases';
   if(IS_MGR)nav('dash',document.getElementById('n-dash'));
   else nav('mine',document.getElementById('n-mine'));
 
@@ -1026,7 +1042,6 @@ function nav(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+page).classList.add('active');
-  if(page==='proj')rProj();
   if(page==='cont'){calcAlerts();rCont();}
   if(page==='mine')rMine();
   if(page==='dash')rDash();
@@ -1191,31 +1206,59 @@ function rCont(){
 
 // ── MY CASES ──
 function rMine(){
-  if(IS_MGR)return;
-  const o=OFF.find(x=>x.name===CU)||{name:CU,color:'#64748b',bg_color:'rgba(100,116,139,.18)'};
-  const av=document.getElementById('mpAv');
-  av.style.background=o.bg_color;av.style.color=o.color;av.textContent=ini(CU);
-  document.getElementById('mpNm').textContent=CU;
-  const mine=DATA.filter(p=>p.business_owner===CU);
+  const mine=IS_MGR?DATA:DATA.filter(p=>p.business_owner===CU);
+
+  // Header
+  if(IS_MGR){
+    document.getElementById('mpAv').style.background='#f59e0b';
+    document.getElementById('mpAv').style.color='#fff';
+    document.getElementById('mpAv').textContent='MG';
+    document.getElementById('mpNm').textContent='All Cases — Manager View';
+  } else {
+    const o=OFF.find(x=>x.name===CU)||{name:CU,color:'#64748b',bg_color:'rgba(100,116,139,.18)'};
+    const av=document.getElementById('mpAv');
+    av.style.background=o.bg_color;av.style.color=o.color;av.textContent=ini(CU);
+    document.getElementById('mpNm').textContent=CU;
+  }
+
   document.getElementById('mpT').textContent=mine.length;
   document.getElementById('mpD').textContent=mine.filter(p=>p.case_status==='Done').length;
   document.getElementById('mpO').textContent=mine.filter(p=>p.case_status==='Ongoing').length;
   document.getElementById('mpP').textContent=fmt(mine.reduce((s,p)=>s+(p.pr_value||0),0));
   document.getElementById('mpS').textContent=fmt(mine.reduce((s,p)=>s+(p.savings||0),0));
+
+  // Hide handover btn for manager
+  const hBtn=document.querySelector('[onclick="openHandover()"]');
+  if(hBtn)hBtn.style.display=IS_MGR?'none':'flex';
+
+  // Show export btn for manager in mine page
+  const eBtn=document.getElementById('mineExportBtn');
+  if(eBtn)eBtn.style.display=IS_MGR?'flex':'none';
+
   let d=[...mine];
   const q=document.getElementById('mSrch').value.toLowerCase();
   const st=document.getElementById('mSt').value;
-  if(q)d=d.filter(p=>(p.subject||'').toLowerCase().includes(q)||(p.pr_number||'').toLowerCase().includes(q));
+  if(q)d=d.filter(p=>(p.subject||'').toLowerCase().includes(q)||(p.pr_number||'').toLowerCase().includes(q)||(p.supplier_name||'').toLowerCase().includes(q));
   if(st)d=d.filter(p=>p.case_status===st);
+
+  // Add owner filter for manager
+  const mOwn=document.getElementById('mOwn');
+  if(mOwn){
+    const owv=mOwn.value||'';
+    if(owv)d=d.filter(p=>p.business_owner===owv);
+    mOwn.style.display=IS_MGR?'block':'none';
+  }
+
   document.getElementById('mCt').textContent=d.length+' results';
   const b=document.getElementById('mBody');
-  if(!d.length){b.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-i">📋</div><div class="empty-t">No cases yet</div></div></td></tr>`;return;}
+  if(!d.length){b.innerHTML='<tr><td colspan="9"><div class="empty"><div class="empty-i">📋</div><div class="empty-t">No cases yet</div></div></td></tr>';return;}
   b.innerHTML=d.map(p=>{
     const pv=p.pr_value||0,pov=p.po_value||0,sv=p.savings||0;
     return`<tr onclick="openProjDr('${p.id}')">
       <td style="font-family:var(--mono);font-size:11px;color:var(--t3)">${p.pr_number||'—'}</td>
       <td><span class="badge ${stc(p.case_status)}">${p.case_status||'—'}</span></td>
       <td><div class="subj">${p.subject||'—'}</div>${p.supplier_name?`<div class="supp">🏢 ${p.supplier_name}</div>`:''}</td>
+      ${IS_MGR?`<td><span style="display:inline-flex;align-items:center;gap:5px">${AV(p.business_owner)}<span style="font-size:11px">${p.business_owner||'—'}</span></span></td>`:''}
       <td style="font-size:11px;color:var(--t3)">${p.business_unit||'—'}</td>
       <td style="font-size:11px;color:var(--t3)">${p.proc_type||'—'}</td>
       <td style="font-family:var(--mono);font-size:11px">${p.pr_received_date||'—'}</td>
@@ -1248,6 +1291,7 @@ function openProjDr(id){
     <div class="di full"><div class="dl">Savings</div><div class="dv big gn">▲ ${(p.savings||0).toLocaleString('en-SA',{maximumFractionDigits:0})}</div></div>
     <div class="ddiv"></div>
     <div class="di full"><div class="dl">Notes</div><div class="dv notes">${p.status_notes||'—'}</div></div>
+    ${p.onedrive_url?`<div class="di full"><div class="dl">📁 OneDrive</div><div class="dv"><a href="${p.onedrive_url}" target="_blank" rel="noopener" style="color:var(--acc3);font-size:13px;display:flex;align-items:center;gap:6px;word-break:break-all"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Open in OneDrive</a></div></div>`:''}
   </div>`;
   document.getElementById('dEditBtn').onclick=()=>openEditProj(p.id);
   openDr();loadComments(p.id,'project');
@@ -1297,7 +1341,7 @@ function openAddProj(){
   editProjId=null;
   document.getElementById('projMoTitle').textContent='Add New Case';
   document.getElementById('projDel').style.display='none';
-  ['f-pr','f-sj','f-sp','f-po','f-nt'].forEach(id=>document.getElementById(id).value='');
+  ['f-pr','f-sj','f-sp','f-po','f-nt','f-od'].forEach(id=>document.getElementById(id).value='');
   ['f-pv','f-pov','f-sv'].forEach(id=>document.getElementById(id).value='');
   ['f-pd','f-pd2'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f-st').value='Ongoing';
@@ -1328,6 +1372,7 @@ function openEditProj(id){
   document.getElementById('f-pov').value=p.po_value||'';
   document.getElementById('f-sv').value=p.savings||'';
   document.getElementById('f-nt').value=p.status_notes||'';
+  document.getElementById('f-od').value=p.onedrive_url||'';
   closeDr();
   document.getElementById('projMo').classList.add('open');
 }
@@ -1355,6 +1400,7 @@ async function saveProj(){
     po_signing_date:document.getElementById('f-pd2').value||null,
     po_value:parseFloat(document.getElementById('f-pov').value)||0,
     savings:parseFloat(document.getElementById('f-sv').value)||0,
+    onedrive_url:document.getElementById('f-od').value.trim()||null,
     updated_at:new Date().toISOString()
   };
   // ⚡ INSTANT close
@@ -1615,7 +1661,7 @@ function renderNotifs(notifs){
 async function openNotif(notifId,projId){
   try{await sb.from('notifications').update({is_read:true}).eq('id',notifId);}catch(e){}
   await loadNotifs();
-  if(projId){const p=DATA.find(x=>x.id===projId);if(p){nav('proj',document.getElementById('n-proj'));openProjDr(projId);}}
+  if(projId){const p=DATA.find(x=>x.id===projId);if(p){nav('mine',document.getElementById('n-mine'));openProjDr(projId);}}
 }
 
 async function markAllRead(){
@@ -1918,6 +1964,224 @@ function loadWidgetState(){
     const ordered=Object.entries(state).sort((a,b)=>a[1].order-b[1].order).map(([id])=>id);
     ordered.forEach(id=>{const w=document.getElementById(id);if(w)grid.appendChild(w);});
   }catch(e){}
+}
+
+
+// ══════════════════════════════════════════════
+// PASSWORD SYSTEM
+// ══════════════════════════════════════════════
+
+// Default passwords (stored in localStorage per device)
+// Format: pass_<name> = hashed/stored password
+const SITE_PASS_KEY = 'seven_site_pass';
+const DEFAULT_SITE_PASS = '1234';
+const DEFAULT_MGR_PASS = '0000';
+
+function getSitePass(){ return localStorage.getItem(SITE_PASS_KEY) || DEFAULT_SITE_PASS; }
+function getOfficerPass(name){ return localStorage.getItem('pass_'+name) || '1234'; }
+function getMgrPass(){ return localStorage.getItem('pass_Manager') || DEFAULT_MGR_PASS; }
+
+// ── SITE PASSWORD ──
+function checkSitePass(){
+  const val = document.getElementById('sitePassInput').value;
+  const err = document.getElementById('sitePassErr');
+  if(val === getSitePass()){
+    err.style.display='none';
+    document.getElementById('s-site').classList.remove('active');
+    document.getElementById('s-login').classList.add('active');
+    // Auto-fill saved credentials if available
+  } else {
+    err.style.display='block';
+    document.getElementById('sitePassInput').value='';
+    document.getElementById('sitePassInput').focus();
+  }
+}
+
+// ── OFFICER CARD CLICK — show password field ──
+function onOfficerCardClick(name){
+  document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));
+  document.querySelector(`.ocard[data-n="${name}"]`).classList.add('sel');
+  document.getElementById('adminSel').value='';
+  document.getElementById('adminPassWrap').style.display='none';
+  document.getElementById('officerPassWrap').style.display='block';
+  document.getElementById('officerPassInput').value='';
+  document.getElementById('officerPassErr').style.display='none';
+  document.getElementById('officerPassInput').focus();
+}
+
+function onAdminSelChange(){
+  const v=document.getElementById('adminSel').value;
+  document.getElementById('adminPassWrap').style.display=v?'block':'none';
+  document.getElementById('adminPassInput').value='';
+  document.getElementById('adminPassErr').style.display='none';
+  if(v){
+    document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));
+    document.getElementById('officerPassWrap').style.display='none';
+  }
+}
+
+// ── LOGIN WITH PASSWORD CHECK ──
+async function doLogin(){
+  const sel=document.querySelector('.ocard.sel');
+  const adm=document.getElementById('adminSel').value;
+  if(!sel&&!adm){toast('Select a profile','err');return;}
+
+  if(adm){
+    // Manager login
+    const pass=document.getElementById('adminPassInput').value;
+    if(pass !== getMgrPass()){
+      document.getElementById('adminPassErr').style.display='block';
+      document.getElementById('adminPassInput').value='';
+      document.getElementById('adminPassInput').focus();
+      return;
+    }
+  } else {
+    // Officer login
+    const name=sel.dataset.n;
+    const pass=document.getElementById('officerPassInput').value;
+    if(pass !== getOfficerPass(name)){
+      document.getElementById('officerPassErr').style.display='block';
+      document.getElementById('officerPassInput').value='';
+      document.getElementById('officerPassInput').focus();
+      return;
+    }
+  }
+
+  CU=adm?'Manager':sel.dataset.n;IS_MGR=!!adm;
+  loading(true,'Loading data…');
+  await loadAll();
+  loading(false);
+  startApp();
+}
+
+// ── CHANGE PASSWORD ──
+function openChangePass(){
+  document.getElementById('cp-current').value='';
+  document.getElementById('cp-new').value='';
+  document.getElementById('cp-confirm').value='';
+  document.getElementById('cpErr').style.display='none';
+  document.getElementById('changePassMo').classList.add('open');
+}
+function closeChangePass(){document.getElementById('changePassMo').classList.remove('open');}
+
+function saveNewPass(){
+  const current=document.getElementById('cp-current').value;
+  const newP=document.getElementById('cp-new').value;
+  const confirm=document.getElementById('cp-confirm').value;
+  const err=document.getElementById('cpErr');
+
+  // Check current password
+  const correctPass=IS_MGR?getMgrPass():getOfficerPass(CU);
+  if(current !== correctPass){
+    err.textContent='❌ Current password is wrong';err.style.display='block';return;
+  }
+  if(!newP||newP.length<4){
+    err.textContent='❌ Password must be at least 4 characters';err.style.display='block';return;
+  }
+  if(newP !== confirm){
+    err.textContent='❌ Passwords do not match';err.style.display='block';return;
+  }
+
+  // Save new password
+  const key=IS_MGR?'pass_Manager':'pass_'+CU;
+  localStorage.setItem(key, newP);
+  closeChangePass();
+  toast('Password changed successfully ✓');
+}
+
+// ── LOGOUT → go back to site pass if needed ──
+
+
+// ══════════════════════════════════════════════
+// HANDOVER SYSTEM
+// ══════════════════════════════════════════════
+function openHandover(){
+  if(IS_MGR)return;
+  const active=DATA.filter(p=>p.business_owner===CU&&(p.case_status==='Ongoing'||p.case_status==='On-hold'));
+  
+  // Populate officer select (exclude self)
+  const sel=document.getElementById('ho-to');
+  sel.innerHTML='<option value="">— Select officer —</option>';
+  OFF.filter(o=>o.name!==CU).forEach(o=>{
+    const op=document.createElement('option');op.value=op.textContent=o.name;sel.appendChild(op);
+  });
+  
+  // Set default return date (2 weeks from now)
+  const d=new Date();d.setDate(d.getDate()+14);
+  document.getElementById('ho-date').value=d.toISOString().split('T')[0];
+  document.getElementById('ho-note').value='';
+  
+  // Render active cases
+  const wrap=document.getElementById('ho-cases');
+  if(!active.length){
+    wrap.innerHTML='<div style="padding:20px;text-align:center;color:var(--t3);font-size:13px">No active cases to transfer</div>';
+  } else {
+    wrap.innerHTML=active.map(p=>`
+      <div style="display:flex;align-items:flex-start;gap:10px;padding:12px;border-bottom:1px solid var(--b1)">
+        <input type="checkbox" id="ho-chk-${p.id}" checked style="margin-top:4px;accent-color:var(--acc2);width:15px;height:15px;flex-shrink:0"/>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:500;color:var(--t1)">${p.subject||'—'}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:2px">${p.pr_number||'—'} · ${p.case_status}</div>
+          ${p.onedrive_url?`<a href="${p.onedrive_url}" target="_blank" style="font-size:11px;color:var(--acc3);display:inline-flex;align-items:center;gap:4px;margin-top:3px">📁 OneDrive</a>`:'<span style="font-size:11px;color:var(--t3)">No OneDrive link</span>'}
+        </div>
+        <span class="badge ${p.case_status==='Ongoing'?'ongoing':'hold'}">${p.case_status}</span>
+      </div>`).join('');
+  }
+  document.getElementById('handoverMo').classList.add('open');
+}
+
+function closeHandover(){document.getElementById('handoverMo').classList.remove('open');}
+
+async function doHandover(){
+  const to=document.getElementById('ho-to').value;
+  if(!to){toast('Select who to hand over to','err');return;}
+  
+  const returnDate=document.getElementById('ho-date').value;
+  const note=document.getElementById('ho-note').value.trim();
+  
+  // Get checked cases
+  const active=DATA.filter(p=>p.business_owner===CU&&(p.case_status==='Ongoing'||p.case_status==='On-hold'));
+  const selected=active.filter(p=>document.getElementById('ho-chk-'+p.id)?.checked);
+  
+  if(!selected.length){toast('Select at least one case','err');return;}
+  
+  closeHandover();
+  toast('Transferring '+selected.length+' cases…');
+  
+  // Build handover note
+  const handoverNote='[HANDOVER from '+CU+(returnDate?' — returns '+returnDate:'')+']'+(note?'\n'+note:'');
+  
+  // Update each selected case
+  for(const p of selected){
+    const updatedNotes=(p.status_notes?p.status_notes+'\n\n':'')+handoverNote;
+    await sb.from('projects').update({
+      business_owner:to,
+      status_notes:updatedNotes,
+      updated_at:new Date().toISOString()
+    }).eq('id',p.id);
+  }
+  
+  // Send notification to receiver
+  const caseList=selected.map(p=>'• '+p.subject).join('\n');
+  await sb.from('notifications').insert([{
+    recipient:to,
+    sender:CU,
+    message:'🔄 '+CU+' handed over '+selected.length+' case(s) to you'+(returnDate?' (returns '+returnDate+')':'')+': '+selected.map(p=>p.subject).join(', '),
+    is_read:false,
+    created_at:new Date().toISOString()
+  }]).catch(()=>{});
+  
+  // Send notification to Manager
+  await sb.from('notifications').insert([{
+    recipient:'Manager',
+    sender:CU,
+    message:`🔄 Handover: ${CU} transferred ${selected.length} case(s) to ${to}${returnDate?' — returns '+returnDate:''}`,
+    is_read:false,
+    created_at:new Date().toISOString()
+  }]).catch(()=>{});
+  
+  await reloadProj();
+  toast('✅ '+selected.length+' case(s) transferred to '+to);
 }
 
 // ── THEME TOGGLE ──
