@@ -27,7 +27,7 @@ input,select,textarea{font-family:var(--font)}
 
 /* LIGHT MODE */
 body.light{--bg:#f0f4f8;--s1:#fff;--s2:#f8fafc;--s3:#e2e8f0;--b1:#cbd5e1;--b2:#94a3b8;--t1:#0f172a;--t2:#334155;--t3:#64748b}
-body.light .topbar,body.light .online-strip,body.light .kpi,body.light .tabs-bar,body.light .toolbar,body.light .card,body.light .oh{background:#fff;border-color:#e2e8f0}
+body.light .topbar,body.light .kpi,body.light .tabs-bar,body.light .toolbar,body.light .card,body.light .oh{background:#fff;border-color:#e2e8f0}
 body.light thead th{background:#f8fafc}
 body.light tbody tr:hover{background:#f8fafc}
 body.light .kpi-strip{background:#e2e8f0}
@@ -100,11 +100,6 @@ body.light .off-card{background:#fff;border-color:#e2e8f0}
 #notifBadge{display:none;position:absolute;top:3px;right:3px;background:var(--red);color:#fff;border-radius:50%;min-width:15px;height:15px;font-size:9px;align-items:center;justify-content:center;font-weight:700;padding:0 3px}
 
 /* ONLINE */
-.online-strip{background:var(--s1);border-bottom:1px solid var(--b1);padding:6px 20px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.online-label{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-.online-chip{display:inline-flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--b1);padding:3px 9px;border-radius:20px;font-size:11px;color:var(--t2)}
-.online-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
 /* KPI */
 .kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--b1)}
@@ -446,10 +441,6 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
     </div>
   </header>
 
-  <div class="online-strip">
-    <span class="online-label">🟢 Online:</span>
-    <span id="onlineList"></span>
-  </div>
 
   <div class="kpi-strip" id="mainKpiStrip">
     <div class="kpi blue"><div class="kpi-l">Total Cases</div><div class="kpi-v" id="kT">—</div><div class="kpi-s">all projects</div></div>
@@ -886,7 +877,7 @@ let editCaseId=null,editContId=null,editOffName=null;
 let selColor='#2563eb',selBg='rgba(37,99,235,.18)';
 let drItem=null,drType=null,drTitle=null;
 let mentionStart=-1;
-let unreadCount=0,pollTimer=null,presTimer=null;
+let unreadCount=0,pollTimer=null;
 let charts={};
 
 // ══ DEFAULTS ══
@@ -1046,7 +1037,7 @@ function buildLoginCards(){
   const g=document.getElementById('ocards');g.innerHTML='';
   OFF.forEach(o=>{
     const d=document.createElement('div');d.className='ocard';d.dataset.n=o.name;
-    d.innerHTML='<div class="ocard-av" style="background:'+o.bg_color+';color:'+o.color+'">'+ini(o.name)+'</div><div class="ocard-name">'+o.name+'</div><div style="font-size:10px;color:var(--t3)">Officer</div>';
+    d.innerHTML='<div class="ocard-av" style="background:'+o.bg_color+';color:'+o.color+'">'+ini(o.name)+'</div><div class="ocard-name">'+o.name+'</div><div style="font-size:10px;color:var(--t3)">'+getJobTitle(o.name)+'</div>';
     d.onclick=()=>onOfficerCardClick(o.name);
     g.appendChild(d);
   });
@@ -1061,8 +1052,8 @@ function doLogout(){
   document.getElementById('s-site').classList.add('active');
   document.getElementById('sitePassInput').value='';
   document.getElementById('sitePassErr').style.display='none';
-  const pName=IS_MGR?'Manager':CU;if(pName)sb.from('presence').delete().eq('officer_name',pName).catch(()=>{});
-  clearInterval(presTimer);clearInterval(pollTimer);
+
+  clearInterval(pollTimer);
   Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};
   sb.getChannels().forEach(ch=>sb.removeChannel(ch));
   CU=null;IS_MGR=false;DATA=[];CONTS=[];unreadCount=0;
@@ -1125,7 +1116,7 @@ function startApp(){
   document.getElementById('handoverBtn').style.display=IS_MGR?'none':'flex';
   document.getElementById('mainKpiStrip').style.display=IS_MGR?'grid':'none';
   document.getElementById('mineNavLbl').textContent=IS_MGR?'All Cases':'My Cases';
-  document.getElementById('mpRole').textContent=IS_MGR?'Manager View':'Procurement Officer';
+  document.getElementById('mpRole').textContent=IS_MGR?'Manager View':getJobTitle(CU);
   // Owner filter in cases
   const mOwn=document.getElementById('mOwn');
   mOwn.innerHTML='<option value="">All Owners</option>';
@@ -1135,15 +1126,7 @@ function startApp(){
   calcKPIs();calcAlerts();
   if(IS_MGR)nav('dash',document.getElementById('n-dash'));
   else nav('mine',document.getElementById('n-mine'));
-  // Presence — all users register
-  const myPresName=IS_MGR?'Manager':CU;
-  sb.from('presence').upsert({officer_name:myPresName,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
-  presTimer=setInterval(async()=>{
-    await sb.from('presence').upsert({officer_name:myPresName,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
-    loadOnline();
-  },15000);
-  loadOnline();
-  sb.channel('pres-ch').on('postgres_changes',{event:'*',schema:'public',table:'presence'},()=>loadOnline()).subscribe();
+
   sb.channel('proj-ch').on('postgres_changes',{event:'*',schema:'public',table:'projects'},async()=>{await reloadProj();toast('🔄 Updated');}).subscribe();
   sb.channel('cont-ch').on('postgres_changes',{event:'*',schema:'public',table:'contracts'},()=>reloadCont()).subscribe();
   loadNotifs();
@@ -1156,16 +1139,6 @@ function startApp(){
   initDrag();loadWidgetState();
 }
 
-async function loadOnline(){
-  try{
-    const since=new Date(Date.now()-60000).toISOString();
-    const{data}=await sb.from('presence').select('officer_name').gte('last_seen',since);
-    if(!data||!data.length)return;
-    const me=IS_MGR?'Manager':CU;
-    const names=[...new Set([me,...data.map(p=>p.officer_name)])];
-    document.getElementById('onlineList').innerHTML=names.map(n=>'<span class="online-chip"><span class="online-dot"></span>'+n+'</span>').join('');
-  }catch(e){}
-}
 
 // ══ KPIs ══
 function calcKPIs(){
@@ -1934,6 +1907,19 @@ function updateThemeIcon(isLight){
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){document.querySelectorAll('.mo.open').forEach(m=>m.classList.remove('open'));closeDr();}
 });
+
+
+function getJobTitle(name){
+  const titles={
+    'Saud':'Senior Associate — Operative Procurement',
+    'Mohammed':'Associate — Operative Procurement',
+    'Mohamed':'Associate — Operative Procurement',
+    'Sara':'Associate — Operative Procurement',
+    'Shaykhah':'Senior Associate — Operative Procurement',
+    'Mansour':'Associate — Operative Procurement',
+  };
+  return titles[name]||'Procurement Officer';
+}
 
 // ══ START ══
 init();
