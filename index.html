@@ -416,6 +416,9 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
       <button class="nbtn" id="n-cont" onclick="nav('cont',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Contracts</span>
       </button>
+      <button class="nbtn" id="n-vendors" onclick="nav('vendors',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Vendors</span>
+      </button>
       <button class="nbtn" id="n-notifs" onclick="nav('notifs',this)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span>Notifications</span>
       </button>
@@ -638,6 +641,40 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
         <thead><tr><th>Contract No.</th><th>Subject / Vendor</th><th>EU Owner</th><th>BU</th><th>Type</th><th>Value (SAR)</th><th>Start</th><th>End</th><th>Remaining</th><th>Remarks</th></tr></thead>
         <tbody id="cBody"></tbody>
       </table></div>
+    </div>
+
+
+    <!-- VENDORS -->
+    <div class="page" id="page-vendors">
+      <!-- Tabs -->
+      <div class="tabs-bar">
+        <button class="tab active" id="vtab-mkt" onclick="vTab('mkt',this)">📣 Marketing <span class="tc">943</span></button>
+        <button class="tab" id="vtab-it" onclick="vTab('it',this)">💻 IT <span class="tc">2,191</span></button>
+      </div>
+      <div class="toolbar">
+        <div class="srch" style="max-width:340px;flex:2">
+          <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input type="text" id="vSrch" placeholder="Search vendor name or email…" oninput="rVendors()"/>
+        </div>
+        <select class="fsel" id="vCat" onchange="rVendors()">
+          <option value="">All Sub-categories</option>
+        </select>
+        <span class="rct" id="vCt">—</span>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr>
+            <th>Vendor No.</th>
+            <th>Vendor Name</th>
+            <th>Category</th>
+            <th>Specialty</th>
+            <th>Email</th>
+            <th>Phone</th>
+          </tr></thead>
+          <tbody id="vBody"></tbody>
+        </table>
+      </div>
+      <div id="vPager" style="display:flex;align-items:center;justify-content:center;gap:10px;padding:14px 20px;font-size:12px;color:var(--t3)"></div>
     </div>
 
     <!-- NOTIFICATIONS -->
@@ -902,6 +939,7 @@ const vp=()=>IS_MGR?DATA:DATA.filter(p=>p.business_owner===CU);
 const toast=(m,t='ok')=>{const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t==='err'?' err':'');el.style.display='block';setTimeout(()=>el.style.display='none',3200);};
 const loading=(v,t)=>{const el=document.getElementById('loadingOv');el.classList.toggle('show',v);if(t)document.getElementById('loadingTxt').textContent=t;};
 
+
 // ══ PASSWORD SYSTEM (Supabase-backed) ══
 // Passwords stored in Supabase passwords table
 // Falls back to defaults if table not ready
@@ -1164,6 +1202,7 @@ function nav(page,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+page).classList.add('active');
   if(page==='mine')rMine();
+  if(page==='vendors'){populateVCat();vLoaded[vType]?rVendors():loadVendors(vType);}
   if(page==='cont'){calcAlerts();rCont();}
   if(page==='dash')rDash();
   if(page==='officers')rOfficers();
@@ -1937,6 +1976,120 @@ function getJobTitle(name){
   };
   return titles[name]||'Procurement Officer';
 }
+
+
+// ══ VENDOR DATABASE ══
+// البيانات تُحمَّل من Supabase عند الطلب فقط
+
+const MKT_CATS=["Agency & Branding", "Media & Advertising", "Production & Print", "Research & Campaign", "Events", "Sponsorship & PR"];
+const IT_CATS=["SOFTWARE", "IT PROFESSIONAL SRV.", "HARDWARE", "TECHNICAL OFFICE SUP", "SUBSCRIPTIONS", "NETWORK", "TECHNICAL ACCESSORIE", "SURVEILLANCE AND CON", "TELECOMMUNICATION", "SMART DEVICES", "DATA ROOM SERVICES", "RENEWAL", "NIC"];
+
+const MKT_COLORS={
+  'Agency & Branding':['#8b5cf6','rgba(139,92,246,.15)'],
+  'Media & Advertising':['#2563eb','rgba(37,99,235,.15)'],
+  'Production & Print':['#f59e0b','rgba(245,158,11,.15)'],
+  'Research & Campaign':['#10b981','rgba(16,185,129,.15)'],
+  'Events':['#f97316','rgba(249,115,22,.15)'],
+  'Sponsorship & PR':['#ec4899','rgba(236,72,153,.15)'],
+};
+
+const IT_COLORS={
+  'SOFTWARE':['#2563eb','rgba(37,99,235,.15)'],
+  'HARDWARE':['#f59e0b','rgba(245,158,11,.15)'],
+  'IT PROFESSIONAL SRV.':['#10b981','rgba(16,185,129,.15)'],
+  'NETWORK':['#8b5cf6','rgba(139,92,246,.15)'],
+  'SUBSCRIPTIONS':['#f97316','rgba(249,115,22,.15)'],
+  'TECHNICAL OFFICE SUP':['#06b6d4','rgba(6,182,212,.15)'],
+  'SURVEILLANCE AND CON':['#ef4444','rgba(239,68,68,.15)'],
+  'TELECOMMUNICATION':['#ec4899','rgba(236,72,153,.15)'],
+};
+
+let vType='mkt', vPage=1, vData=[], vLoaded={mkt:false,it:false};
+const V_PER_PAGE=50;
+
+async function loadVendors(type){
+  if(vLoaded[type])return;
+  document.getElementById('vBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  try{
+    const vtype=type==='mkt'?'Marketing':'IT';
+    let all=[];
+    let from=0;
+    const chunk=1000;
+    while(true){
+      const{data,error}=await sb.from('vendors').select('vendor_number,name,category,subcategory,specialty,email,phone').eq('type',vtype).range(from,from+chunk-1);
+      if(error||!data||!data.length)break;
+      all=[...all,...data];
+      if(data.length<chunk)break;
+      from+=chunk;
+    }
+    vData=all;
+    vLoaded[type]=true;
+    document.getElementById('vCt').textContent=all.length.toLocaleString()+' vendors';
+  }catch(e){
+    document.getElementById('vBody').innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">⚠️</div><div class="empty-t">Failed to load vendors</div></div></td></tr>';
+    return;
+  }
+  rVendors();
+}
+
+function vTab(t,btn){
+  vType=t;vPage=1;
+  document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('vSrch').value='';
+  populateVCat();
+  vLoaded[t]?rVendors():loadVendors(t);
+}
+
+function populateVCat(){
+  const sel=document.getElementById('vCat');
+  const cats=vType==='mkt'?MKT_CATS:IT_CATS;
+  sel.innerHTML='<option value="">All Sub-categories</option>';
+  cats.forEach(c=>{const op=document.createElement('option');op.value=op.textContent=c;sel.appendChild(op);});
+}
+
+function rVendors(){
+  const q=document.getElementById('vSrch').value.toLowerCase().trim();
+  const cat=document.getElementById('vCat').value;
+  const colors=vType==='mkt'?MKT_COLORS:IT_COLORS;
+
+  let d=vData;
+  if(q)d=d.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.vendor_number||'').includes(q));
+  if(cat)d=d.filter(v=>v.category===cat);
+
+  const total=d.length;
+  const pages=Math.max(1,Math.ceil(total/V_PER_PAGE));
+  if(vPage>pages)vPage=1;
+  const slice=d.slice((vPage-1)*V_PER_PAGE,vPage*V_PER_PAGE);
+
+  document.getElementById('vCt').textContent=total.toLocaleString()+' vendors';
+
+  const b=document.getElementById('vBody');
+  if(!slice.length){
+    b.innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">🔍</div><div class="empty-t">No vendors found</div></div></td></tr>';
+    document.getElementById('vPager').innerHTML='';return;
+  }
+
+  b.innerHTML=slice.map(v=>{
+    const cl=colors[v.category]||['#64748b','rgba(100,116,139,.15)'];
+    return '<tr>'
+      +'<td style="font-family:var(--mono);font-size:11px;color:var(--t3)">'+(v.vendor_number||'—')+'</td>'
+      +'<td><div class="subj">'+(v.name||'—')+'</div></td>'
+      +'<td><span class="badge" style="background:'+cl[1]+';color:'+cl[0]+';font-size:10px">'+(v.category||'—')+'</span></td>'
+      +'<td style="font-size:11px;color:var(--t3)">'+(v.specialty||'—')+'</td>'
+      +'<td style="font-size:11px">'+(v.email?'<a href="mailto:'+v.email+'" style="color:var(--acc3)">'+v.email+'</a>':'—')+'</td>'
+      +'<td style="font-family:var(--mono);font-size:11px">'+(v.phone||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  const pg=document.getElementById('vPager');
+  if(pages<=1){pg.innerHTML='';return;}
+  pg.innerHTML='<span style="color:var(--t3)">Page '+vPage+' of '+pages+'</span>'
+    +'<button onclick="vPageGo(-1)" '+(vPage===1?'disabled':'')+' style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:5px 12px;border-radius:var(--r2);font-size:12px;cursor:pointer">← Prev</button>'
+    +'<button onclick="vPageGo(1)" '+(vPage===pages?'disabled':'')+' style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:5px 12px;border-radius:var(--r2);font-size:12px;cursor:pointer">Next →</button>';
+}
+
+function vPageGo(d){vPage+=d;rVendors();document.querySelector('#page-vendors .tbl-wrap').scrollIntoView({behavior:'smooth'});}
 
 // ══ START ══
 init();
