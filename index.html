@@ -912,20 +912,31 @@ const vp=()=>IS_MGR?DATA:DATA.filter(p=>p.business_owner===CU);
 const toast=(m,t='ok')=>{const el=document.getElementById('toast');el.textContent=m;el.className='toast'+(t==='err'?' err':'');el.style.display='block';setTimeout(()=>el.style.display='none',3200);};
 const loading=(v,t)=>{const el=document.getElementById('loadingOv');el.classList.toggle('show',v);if(t)document.getElementById('loadingTxt').textContent=t;};
 
-// ══ PASSWORD SYSTEM ══
-const SITE_PASS_KEY='seven_site_pass';
-const DEFAULT_SITE_PASS='1234';
-const DEFAULT_OFFICER_PASS='1234';
-const DEFAULT_MGR_PASS='0000';
+// ══ PASSWORD SYSTEM (Supabase-backed) ══
+// Passwords stored in Supabase passwords table
+// Falls back to defaults if table not ready
 
-const getSitePass=()=>localStorage.getItem(SITE_PASS_KEY)||DEFAULT_SITE_PASS;
-const getOfficerPass=n=>localStorage.getItem('pass_'+n)||DEFAULT_OFFICER_PASS;
-const getMgrPass=()=>localStorage.getItem('pass_Manager')||DEFAULT_MGR_PASS;
+async function getPass(name){
+  try{
+    const{data}=await sb.from('passwords').select('pass').eq('name',name).single();
+    if(data)return data.pass;
+  }catch(e){}
+  // fallback defaults
+  if(name==='__site__')return'1234';
+  if(name==='Manager')return'0000';
+  return'1234';
+}
 
-function checkSitePass(){
+async function setPass(name,pass){
+  await sb.from('passwords').upsert({name,pass,updated_at:new Date().toISOString()},{onConflict:'name'});
+}
+
+async function checkSitePass(){
   const val=document.getElementById('sitePassInput').value;
   const err=document.getElementById('sitePassErr');
-  if(val===getSitePass()){
+  if(!val){err.style.display='block';return;}
+  const correct=await getPass('__site__');
+  if(val===correct){
     err.style.display='none';
     document.getElementById('s-site').classList.remove('active');
     document.getElementById('s-login').classList.add('active');
@@ -964,7 +975,8 @@ async function doLogin(){
   if(!sel&&!adm){toast('Select a profile','err');return;}
   if(adm){
     const pass=document.getElementById('adminPassInput').value;
-    if(pass!==getMgrPass()){
+    const correct=await getPass('Manager');
+    if(pass!==correct){
       document.getElementById('adminPassErr').style.display='block';
       document.getElementById('adminPassInput').value='';
       document.getElementById('adminPassInput').focus();
@@ -973,7 +985,8 @@ async function doLogin(){
   }else{
     const name=sel.dataset.n;
     const pass=document.getElementById('officerPassInput').value;
-    if(pass!==getOfficerPass(name)){
+    const correct=await getPass(name);
+    if(pass!==correct){
       document.getElementById('officerPassErr').style.display='block';
       document.getElementById('officerPassInput').value='';
       document.getElementById('officerPassInput').focus();
@@ -996,18 +1009,23 @@ function openChangePass(){
 }
 function closeChangePass(){document.getElementById('changePassMo').classList.remove('open');}
 
-function saveNewPass(){
+async function saveNewPass(){
   const cur=document.getElementById('cp-cur').value;
   const np=document.getElementById('cp-new').value;
   const cn=document.getElementById('cp-con').value;
   const err=document.getElementById('cpErr');
-  const correct=IS_MGR?getMgrPass():getOfficerPass(CU);
+  const myName=IS_MGR?'Manager':CU;
+  const correct=await getPass(myName);
   if(cur!==correct){err.textContent='❌ Current password is wrong';err.style.display='block';return;}
   if(!np||np.length<4){err.textContent='❌ Password must be at least 4 characters';err.style.display='block';return;}
   if(np!==cn){err.textContent='❌ Passwords do not match';err.style.display='block';return;}
-  localStorage.setItem('pass_'+(IS_MGR?'Manager':CU),np);
-  closeChangePass();
-  toast('Password changed successfully ✓');
+  try{
+    await setPass(myName,np);
+    closeChangePass();
+    toast('Password changed successfully ✓');
+  }catch(e){
+    err.textContent='❌ Error saving password — try again';err.style.display='block';
+  }
 }
 
 // ══ INIT ══
@@ -1647,8 +1665,12 @@ async function saveOff(){
   if(editOffName){const{error}=await sb.from('officers').update({color:selColor,bg_color:selBg}).eq('name',editOffName);err=error;}
   else{if(OFF.find(o=>o.name===name)){toast('Officer exists','err');return;}const{error}=await sb.from('officers').insert([{name,color:selColor,bg_color:selBg,is_default:false}]);err=error;}
   if(err){toast('Error: '+err.message,'err');return;}
+  // If new officer, add default password
+  if(!editOffName){
+    await sb.from('passwords').upsert({name,pass:'1234',updated_at:new Date().toISOString()},{onConflict:'name'}).catch(()=>{});
+  }
   const{data}=await sb.from('officers').select('*').order('created_at');
-  if(data){OFF=data;buildLoginCards();}rOfficers();closeOffMo();toast(editOffName?'Updated ✓':'Officer added ✓');
+  if(data){OFF=data;buildLoginCards();}rOfficers();closeOffMo();toast(editOffName?'Updated ✓':'Officer added ✓ (default password: 1234)');
 }
 async function delOff(){
   if(!editOffName)return;
