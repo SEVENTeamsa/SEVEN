@@ -1,0 +1,1918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>SEVEN — Procurement Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#09111f;--s1:#0f1c2e;--s2:#162440;--s3:#1d2f50;--b1:#1e3558;--b2:#264470;--b3:#2d5490;--acc:#2563eb;--acc2:#3b82f6;--acc3:#60a5fa;--gold:#f59e0b;--green:#10b981;--red:#ef4444;--orange:#f97316;--purple:#8b5cf6;--t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--done-bg:rgba(16,185,129,.14);--done-c:#34d399;--on-bg:rgba(245,158,11,.12);--on-c:#fbbf24;--hold-bg:rgba(148,163,184,.1);--hold-c:#94a3b8;--font:'IBM Plex Sans Arabic',sans-serif;--mono:'IBM Plex Mono',monospace;--r:10px;--r2:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:var(--font);min-height:100vh;overflow-x:hidden}
+button{font-family:var(--font);cursor:pointer}
+input,select,textarea{font-family:var(--font)}
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+
+/* LOGIN */
+#s-login{align-items:center;justify-content:center;background:radial-gradient(ellipse 80% 60% at 50% 0%,#162440 0%,#09111f 70%)}
+.login-box{background:var(--s1);border:1px solid var(--b1);border-radius:16px;padding:44px;width:460px;max-width:94vw}
+.login-logo{display:flex;align-items:center;gap:14px;margin-bottom:28px;justify-content:center}
+.login-badge{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:grid;place-items:center;font-weight:700;font-size:17px;color:#fff;box-shadow:0 0 28px rgba(37,99,235,.35)}
+.login-title{font-size:20px;font-weight:700}
+.login-sub{font-size:12px;color:var(--t3);margin-top:2px}
+.ogrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:14px 0}
+.ocard{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;cursor:pointer;transition:all .2s;text-align:center}
+.ocard:hover{border-color:var(--acc2);background:var(--s3)}
+.ocard.sel{border-color:var(--acc2);background:rgba(37,99,235,.15)}
+.ocard-av{width:38px;height:38px;border-radius:50%;margin:0 auto 8px;display:grid;place-items:center;font-weight:700;font-size:14px}
+.ocard-name{font-size:13px;font-weight:500}
+.ocard-role{font-size:10px;color:var(--t3);margin-top:1px}
+.divid{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--t3);font-size:12px}
+.divid::before,.divid::after{content:'';flex:1;height:1px;background:var(--b1)}
+.lbl{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin-bottom:6px;display:block}
+.lsel{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);padding:11px 14px;border-radius:var(--r2);font-size:13px;outline:none;margin-bottom:18px;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2364748b' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.lsel option{background:#162440}
+.lbtn{width:100%;padding:13px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;border-radius:var(--r2);font-size:15px;font-weight:600;transition:all .2s}
+.lbtn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,.4)}
+.lbtn:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(9,17,31,.9);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px}
+.loading-overlay.show{display:flex}
+.spinner{width:40px;height:40px;border:3px solid var(--b2);border-top-color:var(--acc2);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-txt{font-size:14px;color:var(--t2)}
+
+/* TOPBAR */
+.topbar{background:var(--s1);border-bottom:1px solid var(--b1);height:60px;display:flex;align-items:center;padding:0 22px;gap:14px;position:sticky;top:0;z-index:100}
+.tbadge{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:grid;place-items:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0}
+.ttxt{font-size:14px;font-weight:600}
+.tsub{font-size:11px;color:var(--t3)}
+.tnav{display:flex;gap:3px;margin-left:auto}
+.nbtn{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:var(--r2);border:none;background:transparent;color:var(--t3);font-size:12.5px;font-weight:500;transition:all .2s}
+.nbtn:hover{background:var(--s2);color:var(--t2)}
+.nbtn.active{background:var(--s2);color:var(--acc3);border:1px solid var(--b2)}
+.nbtn svg{width:14px;height:14px;flex-shrink:0}
+.uchip{display:flex;align-items:center;gap:8px;padding:6px 12px;background:var(--s2);border:1px solid var(--b1);border-radius:20px;margin-left:6px}
+.udot{width:27px;height:27px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:10px}
+.uname{font-size:12px;font-weight:500;color:var(--t2)}
+.logbtn{background:none;border:none;color:var(--t3);font-size:11px;padding:3px 7px;border-radius:4px;cursor:pointer}
+.logbtn:hover{color:var(--red)}
+
+/* ONLINE STRIP */
+.online-strip{background:var(--s1);border-bottom:1px solid var(--b1);padding:8px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.online-label{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.online-chip{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--b1);padding:4px 10px;border-radius:20px;font-size:11px;color:var(--t2)}
+.online-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* KPI */
+.kpi-strip{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:var(--b1)}
+.kpi{background:var(--s1);padding:16px 18px;position:relative}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--acc))}
+.kpi-l{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.kpi-v{font-size:22px;font-weight:700;font-family:var(--mono);color:var(--kvc,var(--t1))}
+.kpi-s{font-size:10px;color:var(--t3);margin-top:3px}
+.kpi.blue{--kc:#2563eb;--kvc:#60a5fa}.kpi.green{--kc:#10b981;--kvc:#34d399}.kpi.orange{--kc:#f97316;--kvc:#fb923c}.kpi.red{--kc:#ef4444;--kvc:#f87171}.kpi.gold{--kc:#f59e0b;--kvc:#fbbf24}.kpi.purple{--kc:#8b5cf6;--kvc:#a78bfa}
+
+/* TABS */
+.tabs-bar{display:flex;gap:2px;padding:11px 22px 0;background:var(--s1);border-bottom:1px solid var(--b1)}
+.tab{padding:8px 16px;border:none;background:transparent;color:var(--t3);font-size:12px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;border-radius:6px 6px 0 0;font-family:var(--font)}
+.tab:hover{color:var(--t2);background:var(--s2)}
+.tab.active{color:var(--acc3);border-bottom-color:var(--acc2);background:var(--s2)}
+.tc{display:inline-flex;align-items:center;justify-content:center;background:var(--s3);color:var(--t2);border-radius:10px;padding:1px 6px;font-size:10px;font-family:var(--mono);margin-left:4px}
+
+/* TOOLBAR */
+.toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 22px;background:var(--s1);border-bottom:1px solid var(--b1)}
+.srch{position:relative;min-width:190px;flex:1;max-width:290px}
+.srch input{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t1);padding:8px 12px 8px 33px;border-radius:var(--r2);font-size:12px;outline:none;transition:border .2s}
+.srch input:focus{border-color:var(--acc2)}
+.srch input::placeholder{color:var(--t3)}
+.si{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:13px;height:13px;color:var(--t3)}
+.fsel{background:var(--s2);border:1px solid var(--b2);color:var(--t1);padding:8px 10px;border-radius:var(--r2);font-size:12px;outline:none;cursor:pointer}
+.fsel option{background:#162440}
+.add-btn{margin-left:auto;display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:8px 15px;border-radius:var(--r2);font-size:12px;font-weight:600;transition:all .2s}
+.add-btn:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(37,99,235,.4)}
+.rct{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.sync-indicator{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t3)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green)}
+.sync-dot.syncing{background:var(--gold);animation:pulse 1s infinite}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--b1);margin:18px 22px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead th{padding:9px 13px;text-align:left;font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;background:var(--s2);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--b1)}
+thead th:hover{color:var(--t2)}
+tbody tr{border-bottom:1px solid var(--b1);transition:background .12s;cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--s2)}
+td{padding:10px 13px;vertical-align:middle;color:var(--t2)}
+td.mono{font-family:var(--mono);font-size:11px;color:var(--t3)}
+.subj{font-weight:500;color:var(--t1);font-size:12.5px}
+.supp{font-size:10.5px;color:var(--t3);margin-top:2px}
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.badge.done{background:var(--done-bg);color:var(--done-c)}.badge.ongoing{background:var(--on-bg);color:var(--on-c)}.badge.hold{background:var(--hold-bg);color:var(--hold-c)}.badge.cancelled{background:rgba(239,68,68,.12);color:#f87171}
+.badge.local{background:rgba(16,185,129,.1);color:#34d399;font-size:10px}.badge.overseas{background:rgba(59,130,246,.1);color:#60a5fa;font-size:10px}
+.badge.seven{background:rgba(37,99,235,.12);color:#60a5fa;font-size:10px;font-weight:700}.badge.scc{background:rgba(139,92,246,.12);color:#a78bfa;font-size:10px;font-weight:700}
+.sar{font-family:var(--mono);font-size:11.5px}.sar.big{color:var(--gold)}.sar.gn{color:var(--green);font-size:11px}
+.dp{font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px}
+.dp.exp{background:rgba(239,68,68,.15);color:#f87171}.dp.urg{background:rgba(249,115,22,.15);color:#fb923c}.dp.warn{background:rgba(234,179,8,.15);color:#facc15}.dp.good{background:rgba(16,185,129,.12);color:#34d399}.dp.safe{background:rgba(100,116,139,.1);color:#94a3b8}
+
+/* ALERTS */
+.abar{display:flex;gap:7px;flex-wrap:wrap;padding:13px 22px;background:var(--s1);border-bottom:1px solid var(--b1)}
+.achip{display:flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--b1);padding:6px 11px;border-radius:7px;font-size:11px;cursor:pointer;transition:all .2s}
+.achip:hover,.achip.on{border-color:var(--acc2);background:rgba(37,99,235,.08)}
+.adot{width:7px;height:7px;border-radius:50%}
+.anum{font-family:var(--mono);font-weight:700;font-size:12px}
+.achip.exp .adot{background:#ef4444}.achip.exp .anum{color:#f87171}.achip.urg .adot{background:#f97316}.achip.urg .anum{color:#fb923c}.achip.warn .adot{background:#eab308}.achip.warn .anum{color:#facc15}.achip.good .adot{background:#10b981}.achip.good .anum{color:#34d399}.achip.safe .adot{background:#64748b}.achip.safe .anum{color:#94a3b8}
+
+/* DASHBOARD */
+.dw{padding:22px}
+.dh{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between}
+.dh h1{font-size:21px;font-weight:700}
+.dh p{font-size:13px;color:var(--t3);margin-top:4px}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px}
+.ct{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
+.or{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--b1)}
+.or:last-child{border-bottom:none}
+.oav{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0}
+.on2{font-size:12.5px;font-weight:500;color:var(--t1);flex:1}
+.osts{display:flex;gap:5px}
+.os{font-size:10px;font-family:var(--mono);padding:2px 6px;border-radius:9px}
+.os.tot{background:var(--s3);color:var(--t2)}.os.dn{background:var(--done-bg);color:var(--done-c)}.os.og{background:var(--on-bg);color:var(--on-c)}
+.pb{height:3px;background:var(--s3);border-radius:2px;margin-top:5px;overflow:hidden}
+.pf{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2));transition:width .5s ease}
+.cer{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--b1);cursor:pointer}
+.cer:last-child{border-bottom:none}
+.cer:hover{opacity:.8}
+.cen{font-size:12px;color:var(--t1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+.ced{font-size:10.5px;font-family:var(--mono);color:var(--t3);margin:0 8px}
+.rr{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--b1);cursor:pointer}
+.rr:last-child{border-bottom:none}
+.rr:hover{opacity:.8}
+.rpr{font-family:var(--mono);font-size:10.5px;color:var(--t3);width:105px;flex-shrink:0}
+.rsj{font-size:12px;color:var(--t1);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rown{font-size:11px;color:var(--t3);margin-top:1px}
+.qsgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.qs{background:var(--s2);border:1px solid var(--b1);border-radius:8px;padding:11px}
+.qsl{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.qsv{font-size:15px;font-weight:700;font-family:var(--mono)}
+
+/* OFFICER PAGE */
+.oh{background:var(--s1);border-bottom:1px solid var(--b1);padding:22px;display:flex;align-items:center;gap:15px}
+.oav-lg{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-size:19px;font-weight:700;flex-shrink:0}
+.oi h2{font-size:19px;font-weight:700}
+.oi p{font-size:12.5px;color:var(--t3);margin-top:3px}
+.okpis{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--b1);border-top:1px solid var(--b1)}
+.okpi{background:var(--s1);padding:13px 16px;position:relative}
+.okpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--acc))}
+.okl{font-size:9.5px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.okv{font-size:19px;font-weight:700;font-family:var(--mono);color:var(--kvc,var(--t1))}
+.okpi.blue{--kc:#2563eb;--kvc:#60a5fa}.okpi.green{--kc:#10b981;--kvc:#34d399}.okpi.orange{--kc:#f97316;--kvc:#fb923c}.okpi.gold{--kc:#f59e0b;--kvc:#fbbf24}.okpi.purple{--kc:#8b5cf6;--kvc:#a78bfa}
+
+/* OFFICERS MGMT */
+.off-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:18px;display:flex;align-items:center;gap:14px;transition:border .2s}
+.off-card:hover{border-color:var(--b2)}
+.off-card-av{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-size:16px;font-weight:700;flex-shrink:0}
+.off-card-name{font-size:14px;font-weight:600}
+.off-card-stats{display:flex;gap:6px;margin-top:7px}
+.seed-badge{font-size:10px;background:var(--s3);color:var(--t3);padding:2px 7px;border-radius:8px;margin-top:3px;display:inline-block}
+.off-edit-btn{margin-left:auto;background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:6px 12px;border-radius:var(--r2);font-size:11px;cursor:pointer;transition:all .2s;flex-shrink:0}
+.off-edit-btn:hover{border-color:var(--acc2);color:var(--acc3)}
+
+/* MODAL */
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.mo.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:640px;max-width:100%;max-height:90vh;overflow-y:auto;animation:su .24s cubic-bezier(.4,0,.2,1)}
+@keyframes su{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.mhdr{padding:18px 22px;border-bottom:1px solid var(--b1);display:flex;justify-content:space-between;align-items:center;background:var(--s2);border-radius:16px 16px 0 0;position:sticky;top:0;z-index:1}
+.mhdr h3{font-size:15px;font-weight:600}
+.mcl{background:var(--s3);border:none;color:var(--t2);width:28px;height:28px;border-radius:6px;font-size:14px;display:grid;place-items:center;cursor:pointer}
+.mcl:hover{background:var(--b2);color:var(--t1)}
+.mbody{padding:22px}
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg1{display:flex;flex-direction:column;gap:4px}
+.fg1.full{grid-column:1/-1}
+.flbl{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.4px}
+.fi,.fs,.fta{background:var(--s2);border:1px solid var(--b2);color:var(--t1);padding:9px 11px;border-radius:var(--r2);font-size:13px;outline:none;transition:border .2s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--acc2)}
+.fi::placeholder{color:var(--t3)}
+.fs option{background:#162440}
+.fta{resize:vertical;min-height:75px;font-family:var(--font)}
+.mftr{padding:14px 22px;border-top:1px solid var(--b1);display:flex;justify-content:flex-end;gap:9px;background:var(--s2);border-radius:0 0 16px 16px;position:sticky;bottom:0}
+.bcan{background:var(--s3);border:1px solid var(--b2);color:var(--t2);padding:8px 18px;border-radius:var(--r2);font-size:12.5px;cursor:pointer}
+.bcan:hover{color:var(--t1)}
+.bsav{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:8px 22px;border-radius:var(--r2);font-size:12.5px;font-weight:600;cursor:pointer}
+.bsav:hover{box-shadow:0 4px 14px rgba(37,99,235,.4)}
+.bdel{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#f87171;padding:8px 14px;border-radius:var(--r2);font-size:12px;margin-right:auto;cursor:pointer}
+.bdel:hover{background:rgba(239,68,68,.2)}
+
+/* COLOR PICKER */
+.cpick{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0}
+.cpick:hover{transform:scale(1.15)}
+.cpick.sel{border-color:#fff;box-shadow:0 0 0 2px var(--acc2);transform:scale(1.1)}
+
+/* DRAWER */
+.dov{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none}
+.dov.open{display:block}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:470px;max-width:96vw;background:var(--s1);border-left:1px solid var(--b1);z-index:301;transform:translateX(100%);transition:transform .27s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;overflow-y:auto}
+.drawer.open{transform:translateX(0)}
+.dhdr{padding:17px 20px;border-bottom:1px solid var(--b1);background:var(--s2);display:flex;justify-content:space-between;align-items:flex-start;position:sticky;top:0}
+.dtit{font-size:14px;font-weight:600;max-width:350px;line-height:1.4}
+.dcl{background:var(--s3);border:none;color:var(--t2);width:27px;height:27px;border-radius:6px;font-size:14px;display:grid;place-items:center;cursor:pointer;flex-shrink:0;margin-left:9px}
+.dcl:hover{background:var(--b2);color:var(--t1)}
+.dbody{padding:20px;flex:1}
+.dg{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.di{display:flex;flex-direction:column;gap:4px}
+.di.full{grid-column:1/-1}
+.dl{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--t3);font-weight:600}
+.dv{font-size:13px;color:var(--t1);line-height:1.5}
+.dv.mono{font-family:var(--mono);font-size:12px;color:var(--t2)}
+.dv.notes{white-space:pre-wrap;font-size:12px;color:var(--t2);line-height:1.6;background:var(--s2);padding:10px;border-radius:7px;border:1px solid var(--b1)}
+.dv.big{font-size:17px;font-weight:700;font-family:var(--mono)}
+.dv.gold{color:var(--gold)}.dv.gn{color:var(--green)}
+.ddiv{height:1px;background:var(--b1);grid-column:1/-1;margin:3px 0}
+.dedit{margin:14px 20px 20px;display:flex;align-items:center;gap:7px;justify-content:center;background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:9px;border-radius:var(--r2);font-size:13px;transition:all .2s;cursor:pointer}
+.dedit:hover{border-color:var(--acc2);color:var(--acc3)}
+
+.empty{text-align:center;padding:46px 20px;color:var(--t3)}
+.empty-i{font-size:34px;margin-bottom:10px;opacity:.4}
+.empty-t{font-size:13px}
+
+.toast{position:fixed;bottom:22px;right:22px;z-index:999;background:var(--s2);border:1px solid var(--b2);border-left:3px solid var(--green);padding:11px 16px;border-radius:var(--r);font-size:13px;color:var(--t1);animation:ti .28s ease;box-shadow:0 6px 28px rgba(0,0,0,.5);max-width:300px;display:none}
+.toast.err{border-left-color:var(--red)}
+@keyframes ti{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+
+.main{flex:1;display:flex;flex-direction:column}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .22s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+
+.log-row{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--b1)}
+.log-row:last-child{border-bottom:none}
+.log-icon{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;flex-shrink:0;margin-top:2px}
+.log-body{flex:1}
+.log-who{font-size:12.5px;font-weight:600;color:var(--t1)}
+.log-what{font-size:12px;color:var(--t2);margin-top:2px;line-height:1.5}
+.log-when{font-size:10.5px;color:var(--t3);font-family:var(--mono);margin-top:3px}
+.log-add{--lc:var(--green)}.log-edit{--lc:var(--gold)}.log-del{--lc:var(--red)}
+.log-icon{background:rgba(0,0,0,.2);color:var(--lc,var(--t2))}
+
+.comment-box{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:16px;margin-top:16px}
+.comment-input-wrap{display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
+.comment-av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.comment-input{flex:1;background:var(--s3);border:1px solid var(--b2);color:var(--t1);padding:9px 12px;border-radius:var(--r2);font-size:13px;outline:none;resize:none;min-height:70px;font-family:var(--font);transition:border .2s}
+.comment-input:focus{border-color:var(--acc2)}
+.comment-input::placeholder{color:var(--t3)}
+.comment-submit{background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:8px 16px;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;align-self:flex-end}
+.comment-submit:hover{box-shadow:0 4px 14px rgba(37,99,235,.4)}
+.mention-dropdown{position:absolute;background:var(--s2);border:1px solid var(--b2);border-radius:var(--r2);z-index:200;min-width:160px;box-shadow:var(--shadow);overflow:hidden}
+.mention-item{padding:8px 14px;cursor:pointer;font-size:13px;color:var(--t1);display:flex;align-items:center;gap:8px}
+.mention-item:hover{background:var(--s3)}
+.comment-row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--b1)}
+.comment-row:last-child{border-bottom:none}
+.comment-body{flex:1}
+.comment-author{font-size:12.5px;font-weight:600;color:var(--t1)}
+.comment-time{font-size:10.5px;color:var(--t3);font-family:var(--mono);margin-left:8px}
+.comment-text{font-size:13px;color:var(--t2);margin-top:4px;line-height:1.6;white-space:pre-wrap}
+.comment-text .mention{color:var(--acc3);font-weight:600}
+.notif-row{display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--b1);cursor:pointer;transition:background .15s}
+.notif-row:hover{background:var(--s2)}
+.notif-row.unread{background:rgba(37,99,235,.06);border-left:3px solid var(--acc2)}
+.notif-row.read{opacity:.6}
+.notif-icon{width:36px;height:36px;border-radius:50%;background:rgba(37,99,235,.15);color:var(--acc3);display:grid;place-items:center;font-size:15px;flex-shrink:0}
+.notif-msg{font-size:13px;color:var(--t1);line-height:1.5}
+.notif-time{font-size:10.5px;color:var(--t3);font-family:var(--mono);margin-top:3px}
+.notif-empty{text-align:center;padding:40px;color:var(--t3);font-size:13px}
+
+.chart-card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:20px}
+.chart-title{font-size:12px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:16px}
+.stat-big{font-size:36px;font-weight:700;font-family:var(--mono);line-height:1}
+.stat-label{font-size:11px;color:var(--t3);margin-top:4px}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-mini{background:var(--s2);border:1px solid var(--b1);border-radius:var(--r2);padding:14px;position:relative;overflow:hidden}
+.kpi-mini::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--mc,var(--acc))}
+.kpi-mini-v{font-size:26px;font-weight:700;font-family:var(--mono);color:var(--mvc,var(--t1))}
+.kpi-mini-l{font-size:10px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.kpi-mini-s{font-size:10px;color:var(--t3);margin-top:3px}
+.kpi-mini.blue{--mc:#2563eb;--mvc:#60a5fa}.kpi-mini.green{--mc:#10b981;--mvc:#34d399}
+.kpi-mini.gold{--mc:#f59e0b;--mvc:#fbbf24}.kpi-mini.purple{--mc:#8b5cf6;--mvc:#a78bfa}
+.kpi-mini.orange{--mc:#f97316;--mvc:#fb923c}.kpi-mini.red{--mc:#ef4444;--mvc:#f87171}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:20px}
+.charts-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:20px}
+.send-notif-btn{display:flex;align-items:center;gap:7px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border:none;color:#fff;padding:8px 16px;border-radius:var(--r2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s}
+.send-notif-btn:hover{box-shadow:0 4px 14px rgba(124,58,237,.4)}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(3,1fr)}.dgrid{grid-template-columns:1fr}.okpis{grid-template-columns:repeat(3,1fr)}.fg{grid-template-columns:1fr}.fg1.full{grid-column:1}}
+@media(max-width:600px){.kpi-strip{grid-template-columns:repeat(2,1fr)}.tnav .nbtn span{display:none}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loadingOv">
+  <div class="spinner"></div>
+  <div class="loading-txt" id="loadingTxt">Connecting to database…</div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen active" id="s-login">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-badge" style="background:white;padding:2px;overflow:hidden"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain"/></div>
+      <div><div class="login-title">SEVEN Procurement</div><div class="login-sub">Case Report Tracker 2026 • Live</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--t3);margin-bottom:12px;text-align:center">Select your profile to continue</div>
+    <div class="ogrid" id="ocards"></div>
+    <div class="divid">or admin access</div>
+    <label class="lbl">Admin Login</label>
+    <select class="lsel" id="adminSel" onchange="document.getElementById('adminPassWrap').style.display=this.value?'block':'none'"><option value="">— Admin Access —</option><option value="admin">Manager — الحساب الرئيسي</option></select>
+    <div id="adminPassWrap" style="display:none;margin-bottom:18px">
+  <label class="lbl">Manager Password</label>
+  <input type="password" class="lsel" id="adminPass" placeholder="Enter manager password" style="margin-bottom:0"/>
+</div>
+<button class="lbtn" id="loginBtn" onclick="doLogin()">Continue →</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="screen" id="s-app">
+  <header class="topbar">
+    <div class="tbadge" style="background:white;padding:2px;overflow:hidden"><img src="data:image/png;base64,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" style="width:100%;height:100%;object-fit:contain"/></div>
+    <div><div class="ttxt">SEVEN Procurement</div><div class="tsub" id="topSub">Live Tracker</div></div>
+    <nav class="tnav">
+      <button class="nbtn active" id="n-dash" onclick="showPage('dash',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg><span>Dashboard</span>
+      </button>
+      <button class="nbtn" id="n-proj" onclick="showPage('proj',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg><span>Projects</span>
+      </button>
+      <button class="nbtn" id="n-cont" onclick="showPage('cont',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span>Contracts</span>
+      </button>
+      <button class="nbtn" id="n-mine" onclick="showPage('mine',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg><span>My Cases</span>
+      </button>
+      <button class="nbtn" id="n-logs" onclick="showPage('logs',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Logs</span>
+      </button>
+      <button class="nbtn" id="n-notifs" onclick="showPage('notifs',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+        <span>Notifications</span>
+      </button>
+      <button class="nbtn" id="n-officers" onclick="showPage('officers',this)" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Officers</span>
+      </button>
+    </nav>
+    <div style="position:relative;cursor:pointer;padding:8px;border-radius:8px;transition:background .2s" onclick="showPage('notifs',document.getElementById('n-notifs'))" id="bellWrap" onmouseover="this.style.background='var(--s2)'" onmouseout="this.style.background='transparent'">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--t2)" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      <span id="notifBadge" style="display:none;position:absolute;top:4px;right:4px;background:var(--red);color:#fff;border-radius:50%;min-width:16px;height:16px;font-size:9px;align-items:center;justify-content:center;font-weight:700;font-family:var(--mono);padding:0 3px">0</span>
+    </div>
+    <div class="uchip">
+      <div class="udot" id="udot"></div>
+      <span class="uname" id="uname"></span>
+      <button class="logbtn" onclick="doLogout()">✕</button>
+    </div>
+  </header>
+
+  <!-- ONLINE STRIP -->
+  <div class="online-strip" id="onlineStrip">
+    <span class="online-label">🟢 Online now:</span>
+    <span id="onlineList" style="font-size:12px;color:var(--t3)">Loading…</span>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="kpi-strip">
+    <div class="kpi blue"><div class="kpi-l">Total Cases</div><div class="kpi-v" id="kT">—</div><div class="kpi-s">all projects</div></div>
+    <div class="kpi green"><div class="kpi-l">Done</div><div class="kpi-v" id="kD">—</div><div class="kpi-s" id="kDp">—</div></div>
+    <div class="kpi orange"><div class="kpi-l">Ongoing</div><div class="kpi-v" id="kO">—</div><div class="kpi-s">active</div></div>
+    <div class="kpi red"><div class="kpi-l">Expiring ≤30d</div><div class="kpi-v" id="kE">—</div><div class="kpi-s">contracts</div></div>
+    <div class="kpi gold"><div class="kpi-l">PR Value (SAR)</div><div class="kpi-v" id="kP">—</div><div class="kpi-s">total</div></div>
+    <div class="kpi purple"><div class="kpi-l">Savings (SAR)</div><div class="kpi-v" id="kS">—</div><div class="kpi-s">achieved</div></div>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dash">
+      <div class="dw">
+        <div class="dh">
+          <div><h1 id="dTitle">Procurement Dashboard</h1><p id="dSub">Live — All Cases &amp; Contracts</p></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="send-notif-btn" id="sendNotifBtn" style="display:none" onclick="openSendNotif()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+              Send Notification
+            </button>
+            <div class="sync-indicator"><div class="sync-dot" id="syncDot"></div><span id="syncTxt">Live</span></div>
+          </div>
+        </div>
+
+        <!-- Manager Advanced View -->
+        <div id="managerDash" style="display:none">
+          <!-- KPI Row -->
+          <div class="kpi-row" id="advKpis"></div>
+          <!-- Charts Row 1 -->
+          <div class="charts-grid">
+            <div class="chart-card"><div class="chart-title">📊 Cases by Status</div><canvas id="chartStatus" height="200"></canvas></div>
+            <div class="chart-card"><div class="chart-title">👤 Cases by Officer</div><canvas id="chartOfficer" height="200"></canvas></div>
+          </div>
+          <!-- Charts Row 2 -->
+          <div class="charts-grid">
+            <div class="chart-card"><div class="chart-title">📅 Cases by Quarter</div><canvas id="chartQuarter" height="200"></canvas></div>
+            <div class="chart-card"><div class="chart-title">🏢 Cases by Business Unit</div><canvas id="chartBU" height="200"></canvas></div>
+          </div>
+          <!-- Charts Row 3 -->
+          <div class="charts-grid-3">
+            <div class="chart-card"><div class="chart-title">💰 PR Value by Officer (SAR)</div><canvas id="chartPRV" height="220"></canvas></div>
+            <div class="chart-card"><div class="chart-title">✅ Completion Rate by Officer</div><canvas id="chartCompletion" height="220"></canvas></div>
+            <div class="chart-card"><div class="chart-title">⚠️ Contract Expiry Status</div><canvas id="chartExpiry" height="220"></canvas></div>
+          </div>
+        </div>
+
+        <!-- Regular view for officers -->
+        <div id="regularDash">
+          <div class="dgrid">
+            <div class="card"><div class="ct">Cases by Officer</div><div id="ownerList"></div></div>
+            <div class="card"><div class="ct">Contract Alerts</div><div id="contAlerts"></div></div>
+            <div class="card"><div class="ct"><span>Recent Cases</span><span style="font-size:10px;font-weight:400;color:var(--t3)">Last 8</span></div><div id="recentList"></div></div>
+            <div class="card"><div class="ct">Quick Stats</div><div class="qsgrid" id="qStats"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="page" id="page-proj">
+      <div class="tabs-bar">
+        <button class="tab active" onclick="ptab('all',this)">All <span class="tc" id="tc-all">—</span></button>
+        <button class="tab" onclick="ptab('done',this)">Done <span class="tc" id="tc-done">—</span></button>
+        <button class="tab" onclick="ptab('ongoing',this)">Ongoing <span class="tc" id="tc-on">—</span></button>
+        <button class="tab" onclick="ptab('hold',this)">On Hold <span class="tc" id="tc-h">—</span></button>
+      </div>
+      <div class="toolbar">
+        <div class="srch"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="pSrch" placeholder="Search…" oninput="rProj()"/></div>
+        <select class="fsel" id="pOwn" onchange="rProj()"><option value="">All Owners</option></select>
+        <select class="fsel" id="pBU" onchange="rProj()"><option value="">All BUs</option></select>
+        <select class="fsel" id="pCo" onchange="rProj()"><option value="">All Companies</option><option>SEVEN</option><option>SCC</option></select>
+        <span class="rct" id="pCt">—</span>
+        <button class="add-btn" onclick="openAdd()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Case
+        </button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th onclick="ps('pr_number')">PR # ↕</th><th onclick="ps('case_status')">Status ↕</th>
+          <th onclick="ps('subject')">Subject / Supplier ↕</th><th onclick="ps('business_owner')">Owner ↕</th>
+          <th onclick="ps('business_unit')">BU ↕</th><th onclick="ps('company')">Co ↕</th>
+          <th onclick="ps('proc_type')">Type ↕</th><th onclick="ps('pr_received_date')">PR Date ↕</th>
+          <th onclick="ps('pr_value')">PR Value ↕</th><th onclick="ps('po_value')">PO Value ↕</th><th onclick="ps('savings')">Savings ↕</th>
+        </tr></thead>
+        <tbody id="pBody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- CONTRACTS -->
+    <div class="page" id="page-cont">
+      <div class="abar">
+        <div class="achip exp" onclick="cf('exp',this)"><div class="adot"></div><span>Expired</span><span class="anum" id="ca-e">—</span></div>
+        <div class="achip urg" onclick="cf('urg',this)"><div class="adot"></div><span>&lt; 30 days</span><span class="anum" id="ca-u">—</span></div>
+        <div class="achip warn" onclick="cf('warn',this)"><div class="adot"></div><span>31–60 days</span><span class="anum" id="ca-w">—</span></div>
+        <div class="achip good" onclick="cf('good',this)"><div class="adot"></div><span>61–180 days</span><span class="anum" id="ca-g">—</span></div>
+        <div class="achip safe" onclick="cf('safe',this)"><div class="adot"></div><span>&gt; 180 days</span><span class="anum" id="ca-s">—</span></div>
+      </div>
+      <div class="toolbar">
+        <div class="srch"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="cSrch" placeholder="Search contracts…" oninput="rCont()"/></div>
+        <select class="fsel" id="cVT" onchange="rCont()"><option value="">All Types</option><option>Local</option><option>Overseas</option></select>
+        <span class="rct" id="cCt">—</span>
+        <button class="add-btn" id="exportBtn" style="background:linear-gradient(135deg,#059669,#047857);display:none" onclick="exportExcel()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export Excel
+        </button>
+        <button class="add-btn" id="addContBtn" onclick="openAddCont()" style="display:none">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Contract
+        </button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>Contract No.</th><th>Subject / Vendor</th><th>EU Owner</th><th>BU</th>
+          <th>Type</th><th>Value (SAR)</th><th>Start</th><th>End</th><th>Remaining</th><th>Remarks</th>
+        </tr></thead>
+        <tbody id="cBody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- MY CASES -->
+    <div class="page" id="page-mine">
+      <div class="oh"><div class="oav-lg" id="mpAv"></div><div class="oi"><h2 id="mpNm"></h2><p>Procurement Officer — Personal Tracker</p></div></div>
+      <div class="okpis">
+        <div class="okpi blue"><div class="okl">My Cases</div><div class="okv" id="mpT">—</div></div>
+        <div class="okpi green"><div class="okl">Done</div><div class="okv" id="mpD">—</div></div>
+        <div class="okpi orange"><div class="okl">Ongoing</div><div class="okv" id="mpO">—</div></div>
+        <div class="okpi gold"><div class="okl">PR Value (SAR)</div><div class="okv" id="mpP">—</div></div>
+        <div class="okpi purple"><div class="okl">Savings (SAR)</div><div class="okv" id="mpS">—</div></div>
+      </div>
+      <div class="toolbar" style="border-top:1px solid var(--b1)">
+        <div class="srch"><svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="mSrch" placeholder="Search my cases…" oninput="rMine()"/></div>
+        <select class="fsel" id="mSt" onchange="rMine()"><option value="">All Statuses</option><option>Done</option><option>Ongoing</option><option>On-hold</option></select>
+        <span class="rct" id="mCt">—</span>
+        <button class="add-btn" onclick="openAdd()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>New Request
+        </button>
+      </div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>PR #</th><th>Status</th><th>Subject / Supplier</th><th>BU</th><th>Type</th><th>PR Date</th><th>PR Value</th><th>PO Value</th><th>Savings</th></tr></thead>
+        <tbody id="mBody"></tbody>
+      </table></div>
+    </div>
+
+    <!-- LOGS -->
+    <div class="page" id="page-logs">
+      <div class="dw">
+        <div class="dh"><h1>Activity Log</h1><p>Everything that happened — who added, edited, or deleted</p></div>
+        <div class="card" style="max-width:900px">
+          <div class="ct"><span>Recent Activity</span><span style="font-size:10px;color:var(--t3);font-weight:400" id="logCount">—</span></div>
+          <div id="logsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIONS -->
+    <div class="page" id="page-notifs">
+      <div style="padding:22px">
+        <div class="dh"><h1>Notifications</h1><p id="notifSubtxt">Your mentions and alerts</p></div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+          <button onclick="markAllRead()" style="background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:7px 14px;border-radius:var(--r2);font-size:12px;cursor:pointer">Mark all as read ✓</button>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="notifList"><div class="notif-empty">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFICERS -->
+    <div class="page" id="page-officers">
+      <div class="dw">
+        <div class="dh">
+          <div><h1>Officers Management</h1><p>Add, edit, or remove procurement officers</p></div>
+          <button class="add-btn" style="margin-left:0;margin-top:4px" onclick="openOffModal()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Add Officer
+          </button>
+        </div>
+        <div id="officerCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="mo" id="mo">
+  <div class="modal">
+    <div class="mhdr"><h3 id="mTitle">Add New Case</h3><button class="mcl" onclick="closeMo()">✕</button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fg1"><label class="flbl">PR #</label><input class="fi" id="f-pr" placeholder="e.g. 10008600"/></div>
+        <div class="fg1"><label class="flbl">Case Status</label><select class="fs" id="f-st"><option>Ongoing</option><option>Done</option><option>On-hold</option><option>Cancelled</option></select></div>
+        <div class="fg1 full"><label class="flbl">Subject *</label><input class="fi" id="f-sj" placeholder="e.g. Marketing Video Production"/></div>
+        <div class="fg1"><label class="flbl">Supplier Name</label><input class="fi" id="f-sp" placeholder="Vendor / Supplier"/></div>
+        <div class="fg1"><label class="flbl">Business Owner</label><select class="fs" id="f-ow"></select></div>
+        <div class="fg1"><label class="flbl">Business Unit</label><select class="fs" id="f-bu"><option>Commerical</option><option>Leasing</option><option>Brand &amp; Corporate</option><option>PR &amp; Communication</option><option>Media &amp; Digtal</option><option>Destination</option><option>Attraction Marketing</option><option>Internal Communication</option><option>Operations</option><option>IT</option><option>Logistics</option></select></div>
+        <div class="fg1"><label class="flbl">Company</label><select class="fs" id="f-co"><option>SEVEN</option><option>SCC</option></select></div>
+        <div class="fg1"><label class="flbl">Proc. Type</label><select class="fs" id="f-ty"><option>RFQ</option><option>RFP</option><option>RFI</option><option>TO</option><option>CR</option><option>Direct PO</option><option>PO &lt; 100K</option><option>SS &gt; 100K</option><option>Revenue Share</option></select></div>
+        <div class="fg1"><label class="flbl">PR Received Date</label><input class="fi" id="f-pd" type="date"/></div>
+        <div class="fg1"><label class="flbl">Year</label><select class="fs" id="f-yr"><option>2026</option><option>2025</option><option>2024</option></select></div>
+        <div class="fg1"><label class="flbl">PR Value (SAR)</label><input class="fi" id="f-pv" type="number" placeholder="0"/></div>
+        <div class="fg1"><label class="flbl">PO #</label><input class="fi" id="f-po" placeholder="e.g. 4500005600"/></div>
+        <div class="fg1"><label class="flbl">PO Signing Date</label><input class="fi" id="f-pd2" type="date"/></div>
+        <div class="fg1"><label class="flbl">PO Value (SAR)</label><input class="fi" id="f-pov" type="number" placeholder="0"/></div>
+        <div class="fg1"><label class="flbl">Savings (SAR)</label><input class="fi" id="f-sv" type="number" placeholder="0"/></div>
+        <div class="fg1 full"><label class="flbl">Status Notes</label><textarea class="fta" id="f-nt" placeholder="Add status updates, notes…"></textarea></div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bdel" id="mDel" onclick="delCase()" style="display:none">Delete</button>
+      <button class="bcan" onclick="closeMo()">Cancel</button>
+      <button class="bsav" onclick="saveCase()">Save Case</button>
+    </div>
+  </div>
+</div>
+
+<!-- OFFICER MODAL -->
+<div class="mo" id="offMo">
+  <div class="modal" style="width:420px">
+    <div class="mhdr"><h3 id="offMoTitle">Add Officer</h3><button class="mcl" onclick="closeOffMo()">✕</button></div>
+    <div class="mbody">
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="fg1"><label class="flbl">Officer Name *</label><input class="fi" id="of-name" placeholder="e.g. Ahmad"/></div>
+        <div class="fg1">
+          <label class="flbl">Pick Color</label>
+          <div id="colorPicker" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+            <div class="cpick" data-c="#2563eb" data-b="rgba(37,99,235,.18)" style="background:#2563eb"></div>
+            <div class="cpick" data-c="#10b981" data-b="rgba(16,185,129,.18)" style="background:#10b981"></div>
+            <div class="cpick" data-c="#f59e0b" data-b="rgba(245,158,11,.18)" style="background:#f59e0b"></div>
+            <div class="cpick" data-c="#8b5cf6" data-b="rgba(139,92,246,.18)" style="background:#8b5cf6"></div>
+            <div class="cpick" data-c="#f97316" data-b="rgba(249,115,22,.18)" style="background:#f97316"></div>
+            <div class="cpick" data-c="#ef4444" data-b="rgba(239,68,68,.18)" style="background:#ef4444"></div>
+            <div class="cpick" data-c="#06b6d4" data-b="rgba(6,182,212,.18)" style="background:#06b6d4"></div>
+            <div class="cpick" data-c="#ec4899" data-b="rgba(236,72,153,.18)" style="background:#ec4899"></div>
+            <div class="cpick" data-c="#84cc16" data-b="rgba(132,204,22,.18)" style="background:#84cc16"></div>
+            <div class="cpick" data-c="#a855f7" data-b="rgba(168,85,247,.18)" style="background:#a855f7"></div>
+            <div class="cpick" data-c="#0ea5e9" data-b="rgba(14,165,233,.18)" style="background:#0ea5e9"></div>
+            <div class="cpick" data-c="#f43f5e" data-b="rgba(244,63,94,.18)" style="background:#f43f5e"></div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--t3)">Selected: <span id="colorPreview" style="display:inline-flex;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-left:4px;border:1px solid var(--b2)"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bdel" id="offDel" onclick="delOfficer()" style="display:none">Remove</button>
+      <button class="bcan" onclick="closeOffMo()">Cancel</button>
+      <button class="bsav" onclick="saveOfficer()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEND NOTIFICATION MODAL -->
+<div class="mo" id="sendNotifMo">
+  <div class="modal" style="width:460px">
+    <div class="mhdr"><h3>Send Notification</h3><button class="mcl" onclick="closeSendNotif()">✕</button></div>
+    <div class="mbody">
+      <div class="fg" style="grid-template-columns:1fr">
+        <div class="fg1">
+          <label class="flbl">Send To</label>
+          <select class="fs" id="notifTo">
+            <option value="all">📢 All Officers</option>
+          </select>
+        </div>
+        <div class="fg1">
+          <label class="flbl">Message *</label>
+          <textarea class="fta" id="notifMsg" placeholder="Write your message…" rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bcan" onclick="closeSendNotif()">Cancel</button>
+      <button class="bsav" style="background:linear-gradient(135deg,#7c3aed,#6d28d9)" onclick="sendManagerNotif()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+        Send
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTRACT MODAL -->
+<div class="mo" id="contMo">
+  <div class="modal">
+    <div class="mhdr"><h3 id="contMoTitle">Add Contract</h3><button class="mcl" onclick="closeContMo()">✕</button></div>
+    <div class="mbody">
+      <div class="fg">
+        <div class="fg1"><label class="flbl">Contract No. *</label><input class="fi" id="c-num" placeholder="e.g. 215.2026"/></div>
+        <div class="fg1"><label class="flbl">Vendor Type</label><select class="fs" id="c-vt"><option>Local</option><option>Overseas</option></select></div>
+        <div class="fg1 full"><label class="flbl">Subject *</label><input class="fi" id="c-subj" placeholder="e.g. Service Agreement for…"/></div>
+        <div class="fg1"><label class="flbl">Vendor Name</label><input class="fi" id="c-vn" placeholder="Vendor / Supplier"/></div>
+        <div class="fg1"><label class="flbl">EU Owner</label><input class="fi" id="c-eu" placeholder="e.g. Mohammed Al-Otaibi"/></div>
+        <div class="fg1"><label class="flbl">Business Unit</label><select class="fs" id="c-bu"><option value="">— Select —</option><option>Commerical</option><option>Leasing</option><option>Brand &amp; Corporate</option><option>PR &amp; Communication</option><option>Media &amp; Digtal</option><option>Attraction Marketing</option><option>Internal Communication</option><option>Operations</option><option>IT</option><option>Logistics</option></select></div>
+        <div class="fg1"><label class="flbl">Contract Value (SAR)</label><input class="fi" id="c-cv" type="number" placeholder="0"/></div>
+        <div class="fg1"><label class="flbl">Outline Agreement No.</label><input class="fi" id="c-oa" placeholder="e.g. 4600000960"/></div>
+        <div class="fg1"><label class="flbl">Start Date</label><input class="fi" id="c-sd" type="date"/></div>
+        <div class="fg1"><label class="flbl">End Date</label><input class="fi" id="c-ed" type="date"/></div>
+        <div class="fg1 full"><label class="flbl">Remarks</label><input class="fi" id="c-rem" placeholder="Notes…"/></div>
+      </div>
+    </div>
+    <div class="mftr">
+      <button class="bdel" id="contDel" onclick="delContract()" style="display:none">Delete</button>
+      <button class="bcan" onclick="closeContMo()">Cancel</button>
+      <button class="bsav" onclick="saveContract()">Save Contract</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="dov" id="dov" onclick="closeDr()"></div>
+<div class="drawer" id="drawer">
+  <div class="dhdr"><div class="dtit" id="dTit">—</div><button class="dcl" onclick="closeDr()">✕</button></div>
+  <div class="dbody" id="dBody"></div>
+  <div id="commentsSection" style="padding:0 20px 4px;display:none">
+  <div style="font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-top:4px;border-top:1px solid var(--b1)">💬 Comments</div>
+  <div id="commentsList" style="max-height:280px;overflow-y:auto;margin-bottom:12px"></div>
+  <div class="comment-input-wrap" style="position:relative">
+    <div class="comment-av" id="commentAv"></div>
+    <div style="flex:1;position:relative">
+      <textarea class="comment-input" id="commentInput" placeholder="Write a comment… use @name to mention someone" rows="2" oninput="handleMentionInput(this)"></textarea>
+      <div id="mentionDropdown" class="mention-dropdown" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px"></div>
+    </div>
+    <button class="comment-submit" onclick="submitComment()">Send</button>
+  </div>
+</div>
+<button class="dedit" id="dEdit" onclick="editFromDr()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Edit Case
+  </button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  SUPABASE SETUP
+// ══════════════════════════════════════════════
+const SUPA_URL = 'https://mucgimjdtegxcycpsnwb.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im11Y2dpbWpkdGVneGN5Y3BzbndiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU2MzA5MDIsImV4cCI6MjA5MTIwNjkwMn0.sRGMzXluEdwcdDSjnue9SJ2PIuxbmTdI8BIPh0UU3NY';
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+// ══════════════════════════════════════════════
+//  STATIC CONTRACTS DATA (unchanged)
+// ══════════════════════════════════════════════
+const CONT=[
+  {n:"115.2025",s:"Service Agreement for Visual Content",eu:"Sherif Hashem",bu:"Attraction Marketing",vn:"LMC Design",vt:"Overseas",cv:6686377,sd:"2025-12-09",ed:"2026-12-09",rd:245,oa:"4600000910",r:"Done"},
+  {n:"Webedia",s:"Framework agreement for social media",eu:"Manar",bu:"Attraction Marketing",vn:"Webedia",vt:"Local",cv:7260000,sd:"2023-11-06",ed:"2024-05-13",rd:-695,oa:"",r:""},
+  {n:"Webedia-CR4",s:"Framework agreement for social media CR4",eu:"Manar",bu:"Attraction Marketing",vn:"Webedia",vt:"Local",cv:1200000,sd:"2025-10-13",ed:"2026-04-13",rd:5,oa:"",r:""},
+  {n:"087-2025",s:"CASH-IN-TRANSIT SERVICES",eu:"Husam Al-Mekhlafi",bu:"",vn:"SANID",vt:"Local",cv:192000,sd:"2025-08-19",ed:"2027-08-18",rd:497,oa:"4600000851",r:""},
+  {n:"005-2025",s:"Framework Agreement for Supply of Cleaning Products",eu:"Husam Al-Mekhlafi",bu:"",vn:"Golden Fist",vt:"Local",cv:245000,sd:"2025-03-19",ed:"2026-03-18",rd:-21,oa:"4600000764",r:""},
+  {n:"Influx-CR2",s:"Amendment No. II to Service Agreement",eu:"Abdullah Alghofaili",bu:"IT",vn:"Influx",vt:"Overseas",cv:3681518,sd:"2026-03-01",ed:"2027-02-28",rd:326,oa:"4600000623",r:""},
+  {n:"184.2025",s:"Framework agreement for Marketing Video Production",eu:"Layal Katbi",bu:"Attraction Marketing",vn:"Daw Production House",vt:"Local",cv:30000000,sd:"2026-01-18",ed:"2028-01-16",rd:648,oa:"4600000917",r:""},
+  {n:"Daw-TO1",s:"First Task order for Marketing Video Production",eu:"Layal Katbi",bu:"Attraction Marketing",vn:"Daw Production House",vt:"Local",cv:12955150,sd:"2026-02-05",ed:"2026-12-31",rd:267,oa:"4600000917",r:"Done"},
+  {n:"357.2024",s:"Framework agreement for Attractions Branding",eu:"Mohamed Qanati",bu:"Brand & Corporate",vn:"Brash FZ LLC",vt:"Overseas",cv:6498300,sd:"2024-11-22",ed:"2026-11-22",rd:228,oa:"4600000715",r:""},
+  {n:"Brash-TO2",s:"Second Task Order for Attractions Branding",eu:"Mohamed Qanati",bu:"Brand & Corporate",vn:"Brash FZ LLC",vt:"Overseas",cv:515242,sd:"2025-12-22",ed:"2025-12-31",rd:-98,oa:"4600000715",r:""},
+  {n:"193.2025",s:"Services Agreement for Public Relations Agency",eu:"Najlaa Alali",bu:"PR & Communication",vn:"IMPACT BBDO",vt:"Overseas",cv:3685556,sd:"2026-02-03",ed:"2028-04-02",rd:779,oa:"4600000956",r:""},
+  {n:"210.2025",s:"Service Agreement for Creative Agency",eu:"Mariam Almulhim",bu:"Brand & Corporate",vn:"Webedia",vt:"Local",cv:16000000,sd:"2026-03-31",ed:"2028-03-31",rd:720,oa:"4600000957",r:"Approved PO Sent to the EU"}
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let OFF = [], DATA = [], CU = null, ADM = false;
+let _di = null, _ei = null, _offEdit = null, _selColor = null, _selBg = null;
+let pSrt={k:'pr_received_date',d:-1}, pTF='all', cEF=null;
+let presenceInterval = null;
+
+const ini=n=>(n||'').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+const oc=n=>OFF.find(o=>o.name===n)?.color||'#64748b';
+const ob=n=>OFF.find(o=>o.name===n)?.bg_color||'rgba(100,116,139,.18)';
+const fmt=(n,s=true)=>{if(!n||isNaN(n))return'—';n=parseFloat(n);if(s){if(n>=1e9)return(n/1e9).toFixed(1)+'B';if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(0)+'K';}return n.toLocaleString('en-SA',{maximumFractionDigits:0})};
+const stc=s=>s==='Done'?'done':s==='Ongoing'?'ongoing':(s==='On-hold'||s==='On Hold')?'hold':'cancelled';
+const dpc=d=>d<=0?'exp':d<=30?'urg':d<=60?'warn':d<=180?'good':'safe';
+const dpl=d=>d<=0?'⛔ Expired '+Math.abs(d)+'d':d<=30?'🔴 '+d+'d':d<=60?'🟠 '+d+'d':d<=180?'🟡 '+d+'d':'🟢 '+d+'d';
+const AV=n=>`<span style="display:inline-flex;width:22px;height:22px;border-radius:50%;background:${ob(n)};color:${oc(n)};align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0">${ini(n)}</span>`;
+const vp=()=>ADM?DATA:DATA.filter(p=>p.business_owner===CU);
+const loading=(show,txt='Loading…')=>{const el=document.getElementById('loadingOv');el.classList.toggle('show',show);if(txt)document.getElementById('loadingTxt').textContent=txt;};
+const toast=(msg,t='ok')=>{const el=document.getElementById('toast');el.textContent=msg;el.className='toast'+(t==='err'?' err':'');el.style.display='block';setTimeout(()=>el.style.display='none',3000);};
+
+// ══════════════════════════════════════════════
+//  INIT — Load officers from Supabase
+// ══════════════════════════════════════════════
+const DEFAULT_OFFICERS=[
+  {name:'Saud',    color:'#2563eb', bg_color:'rgba(37,99,235,.18)',  is_default:true},
+  {name:'Mohammed',color:'#10b981', bg_color:'rgba(16,185,129,.18)', is_default:true},
+  {name:'Mansour', color:'#f59e0b', bg_color:'rgba(245,158,11,.18)', is_default:true},
+  {name:'Shaykhah',color:'#8b5cf6', bg_color:'rgba(139,92,246,.18)', is_default:true},
+  {name:'Sara',    color:'#f97316', bg_color:'rgba(249,115,22,.18)',  is_default:true},
+];
+
+async function init(){
+  loading(true,'Connecting to database…');
+  try {
+    const {data,error}=await sb.from('officers').select('*').order('created_at');
+    if(error||!data||data.length===0){
+      // Use default officers if Supabase fails or empty
+      OFF=DEFAULT_OFFICERS;
+    } else {
+      OFF=data;
+    }
+    buildLoginCards();
+    loading(false);
+  } catch(e){
+    // Fallback to default officers on any error
+    OFF=DEFAULT_OFFICERS;
+    buildLoginCards();
+    loading(false);
+  }
+}
+
+function buildLoginCards(){
+  const g=document.getElementById('ocards');g.innerHTML='';
+  OFF.forEach(o=>{
+    const d=document.createElement('div');d.className='ocard';d.dataset.n=o.name;
+    d.innerHTML=`<div class="ocard-av" style="background:${o.bg_color};color:${o.color}">${ini(o.name)}</div><div class="ocard-name">${o.name}</div><div class="ocard-role">Procurement Officer</div>`;
+    d.onclick=()=>{document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));d.classList.add('sel');document.getElementById('adminSel').value='';document.getElementById('adminPassWrap').style.display='none';};
+    g.appendChild(d);
+  });
+  // populate owner select in modal
+  const fs=document.getElementById('f-ow');fs.innerHTML='';
+  OFF.forEach(o=>{const op=document.createElement('option');op.value=op.textContent=o.name;fs.appendChild(op);});
+}
+
+// ══════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ══════════════════════════════════════════════
+const MANAGER_PASSWORD = 'Seven@2026';
+
+async function doLogin(){
+  const sel=document.querySelector('.ocard.sel'),ad=document.getElementById('adminSel').value;
+  if(!sel&&!ad){toast('Please select a profile','err');return;}
+  if(ad){
+    const pass=document.getElementById('adminPass').value;
+    if(pass!==MANAGER_PASSWORD){toast('Wrong password ❌','err');document.getElementById('adminPass').value='';return;}
+  }
+  CU=ad?'Manager':sel.dataset.n;ADM=!!ad;
+  document.getElementById('loginBtn').disabled=true;
+  loading(true,'Loading data…');
+  await loadData();
+  loading(false);
+  document.getElementById('loginBtn').disabled=false;
+  startApp();
+}
+
+async function doLogout(){
+  // remove presence
+  if(CU&&!ADM) await sb.from('presence').delete().eq('officer_name',CU);
+  clearInterval(presenceInterval);
+  CU=null;ADM=false;DATA=[];
+  document.querySelectorAll('.ocard').forEach(c=>c.classList.remove('sel'));
+  document.getElementById('adminSel').value='';document.getElementById('adminPassWrap').style.display='none';
+  document.getElementById('s-app').classList.remove('active');
+  document.getElementById('s-login').classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+//  LOAD DATA
+// ══════════════════════════════════════════════
+async function loadData(){
+  const [{data:pd,error:pe},{data:cd}]=await Promise.all([
+    sb.from('projects').select('*').order('created_at',{ascending:false}),
+    sb.from('contracts').select('*').order('created_at')
+  ]);
+  if(pe){toast('Failed to load data','err');return;}
+  DATA=pd||[];
+  const today=new Date();today.setHours(0,0,0,0);
+  const calcRd=arr=>{arr.forEach(c=>{if(c.end_date){const ed=new Date(c.end_date);c.remaining_days=Math.round((ed-today)/(1000*60*60*24));}else c.remaining_days=0;});return arr;};
+  if(cd&&cd.length>0){CONTRACTS_DB=calcRd(cd);}
+  else{
+    // Fallback static contracts if table empty or not created yet
+    CONTRACTS_DB=calcRd([
+      {id:'static-1',contract_number:'115.2025',subject:'Service Agreement for Visual Content',eu_owner:'Sherif Hashem',business_unit:'Attraction Marketing',vendor_name:'LMC Design',vendor_type:'Overseas',contract_value:6686377,start_date:'2025-12-09',end_date:'2026-12-09',outline_agreement:'4600000910',remarks:'Done'},
+      {id:'static-2',contract_number:'Webedia-CR4',subject:'Framework agreement for social media CR4',eu_owner:'Manar',business_unit:'Attraction Marketing',vendor_name:'Webedia',vendor_type:'Local',contract_value:1200000,start_date:'2025-10-13',end_date:'2026-04-13',outline_agreement:'',remarks:''},
+      {id:'static-3',contract_number:'087-2025',subject:'CASH-IN-TRANSIT SERVICES',eu_owner:'Husam Al-Mekhlafi',business_unit:'',vendor_name:'SANID',vendor_type:'Local',contract_value:192000,start_date:'2025-08-19',end_date:'2027-08-18',outline_agreement:'4600000851',remarks:''},
+      {id:'static-4',contract_number:'005-2025',subject:'Framework Agreement for Supply of Cleaning Products',eu_owner:'Husam Al-Mekhlafi',business_unit:'',vendor_name:'Golden Fist',vendor_type:'Local',contract_value:245000,start_date:'2025-03-19',end_date:'2026-03-18',outline_agreement:'4600000764',remarks:''},
+      {id:'static-5',contract_number:'Influx-CR2',subject:'Amendment No. II to Service Agreement',eu_owner:'Abdullah Alghofaili',business_unit:'IT',vendor_name:'Influx',vendor_type:'Overseas',contract_value:3681518,start_date:'2026-03-01',end_date:'2027-02-28',outline_agreement:'4600000623',remarks:''},
+      {id:'static-6',contract_number:'Influx-CR1',subject:'Amendment No. I to Service Agreement',eu_owner:'Abdullah Alghofaili',business_unit:'IT',vendor_name:'Influx',vendor_type:'Overseas',contract_value:2863350,start_date:'2025-03-01',end_date:'2026-02-28',outline_agreement:'4600000623',remarks:''},
+      {id:'static-7',contract_number:'184.2025',subject:'Framework agreement for Marketing Video Production',eu_owner:'Layal Katbi',business_unit:'Attraction Marketing',vendor_name:'Daw Production House',vendor_type:'Local',contract_value:30000000,start_date:'2026-01-18',end_date:'2028-01-16',outline_agreement:'4600000917',remarks:''},
+      {id:'static-8',contract_number:'Daw-TO1',subject:'First Task order for Marketing Video Production',eu_owner:'Layal Katbi',business_unit:'Attraction Marketing',vendor_name:'Daw Production House',vendor_type:'Local',contract_value:12955150,start_date:'2026-02-05',end_date:'2026-12-31',outline_agreement:'4600000917',remarks:'Done'},
+      {id:'static-9',contract_number:'357.2024',subject:'Framework agreement for Attractions Branding',eu_owner:'Mohamed Qanati',business_unit:'Brand & Corporate',vendor_name:'Brash FZ LLC',vendor_type:'Overseas',contract_value:6498300,start_date:'2024-11-22',end_date:'2026-11-22',outline_agreement:'4600000715',remarks:''},
+      {id:'static-10',contract_number:'Brash-TO2',subject:'Second Task Order for Attractions Branding',eu_owner:'Mohamed Qanati',business_unit:'Brand & Corporate',vendor_name:'Brash FZ LLC',vendor_type:'Overseas',contract_value:515242,start_date:'2025-12-22',end_date:'2025-12-31',outline_agreement:'4600000715',remarks:''},
+      {id:'static-11',contract_number:'193.2025',subject:'Services Agreement for Public Relations Agency',eu_owner:'Najlaa Alali',business_unit:'PR & Communication',vendor_name:'IMPACT BBDO',vendor_type:'Overseas',contract_value:3685556,start_date:'2026-02-03',end_date:'2028-04-02',outline_agreement:'4600000956',remarks:''},
+      {id:'static-12',contract_number:'210.2025',subject:'Service Agreement for Creative Agency',eu_owner:'Mariam Almulhim',business_unit:'Brand & Corporate',vendor_name:'Webedia',vendor_type:'Local',contract_value:16000000,start_date:'2026-03-31',end_date:'2028-03-31',outline_agreement:'4600000957',remarks:'Approved PO Sent to EU'},
+    ]);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  START APP
+// ══════════════════════════════════════════════
+function startApp(){
+  document.getElementById('s-login').classList.remove('active');
+  document.getElementById('s-app').classList.add('active');
+
+  const ud=document.getElementById('udot');
+  ud.style.background=ADM?'#f59e0b':oc(CU);ud.style.color='#fff';ud.textContent=ADM?'MG':ini(CU);
+  document.getElementById('uname').textContent=ADM?'Admin':CU;
+  document.getElementById('topSub').textContent=ADM?'Manager — Full Access':CU+' — My Tracker';
+  document.getElementById('n-mine').style.display=ADM?'none':'flex';
+  document.getElementById('n-notifs').style.display='flex';
+  document.getElementById('bellWrap').style.display='flex';
+  document.getElementById('n-officers').style.display=ADM?'flex':'none';
+  document.getElementById('n-logs').style.display=ADM?'flex':'none';
+  document.getElementById('addContBtn').style.display='flex'; // all users can add contracts
+  document.getElementById('exportBtn').style.display=ADM?'flex':'none';
+
+  populateFilters();computeKPIs();computeCAlerts();rProj();rCont();rDash();
+  if(!ADM){rMine();showPage('mine',document.getElementById('n-mine'));}
+  else showPage('dash',document.getElementById('n-dash'));
+
+  // Presence
+  if(!ADM) updatePresence();
+  loadOnline();
+  presenceInterval=setInterval(()=>{if(!ADM)updatePresence();loadOnline();},15000);
+
+  // Real-time subscription
+  sb.channel('projects-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'projects'},async()=>{
+      setSyncing(true);
+      await loadData();
+      computeKPIs();rDash();rProj();rCont();rMine();
+      setSyncing(false);
+      toast('🔄 Data updated by another user');
+    })
+    .subscribe();
+
+  if(!ADM){ loadNotifications(); subscribeNotifications(); setInterval(loadNotifications, 30000); }
+  sb.channel('contracts-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'contracts'},async()=>{
+      await loadContracts();computeCAlerts();rCont();rDash();
+    })
+    .subscribe();
+
+  sb.channel('officers-changes')
+    .on('postgres_changes',{event:'*',schema:'public',table:'officers'},async()=>{
+      const {data}=await sb.from('officers').select('*').order('created_at');
+      if(data){OFF=data;buildLoginCards();rOfficers();}
+    })
+    .subscribe();
+}
+
+function setSyncing(v){
+  const d=document.getElementById('syncDot'),t=document.getElementById('syncTxt');
+  if(d){d.className='sync-dot'+(v?' syncing':'');t.textContent=v?'Syncing…':'Live';}
+}
+
+// ══════════════════════════════════════════════
+//  PRESENCE (who's online)
+// ══════════════════════════════════════════════
+async function updatePresence(){
+  await sb.from('presence').upsert({officer_name:CU,last_seen:new Date().toISOString()},{onConflict:'officer_name'});
+}
+async function loadOnline(){
+  const since=new Date(Date.now()-60000).toISOString();
+  const {data}=await sb.from('presence').select('officer_name').gte('last_seen',since);
+  const list=document.getElementById('onlineList');
+  if(!data||data.length===0){list.textContent='No one online';return;}
+  list.innerHTML=data.map(p=>`<span class="online-chip"><span class="online-dot"></span>${p.officer_name}</span>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  FILTERS
+// ══════════════════════════════════════════════
+function populateFilters(){
+  const bus=[...new Set(DATA.map(p=>p.business_unit).filter(Boolean))].sort();
+  const pBU=document.getElementById('pBU');pBU.innerHTML='<option value="">All BUs</option>';
+  bus.forEach(b=>{const o=document.createElement('option');o.value=o.textContent=b;pBU.appendChild(o);});
+  const pOwn=document.getElementById('pOwn');pOwn.innerHTML='<option value="">All Owners</option>';
+  OFF.forEach(o=>{const op=document.createElement('option');op.value=op.textContent=o.name;pOwn.appendChild(op);});
+  if(!ADM){pOwn.value=CU;pOwn.disabled=true;}else pOwn.disabled=false;
+}
+
+// ══════════════════════════════════════════════
+//  KPIs
+// ══════════════════════════════════════════════
+function computeKPIs(){
+  const ps=vp(),dn=ps.filter(p=>p.case_status==='Done').length;
+  document.getElementById('kT').textContent=ps.length;
+  document.getElementById('kD').textContent=dn;
+  document.getElementById('kDp').textContent=ps.length?Math.round(dn/ps.length*100)+'%':'—';
+  document.getElementById('kO').textContent=ps.filter(p=>p.case_status==='Ongoing').length;
+  document.getElementById('kE').textContent=CONT.filter(c=>c.rd>0&&c.rd<=30).length;
+  document.getElementById('kP').textContent=fmt(ps.reduce((s,p)=>s+(p.pr_value||0),0));
+  document.getElementById('kS').textContent=fmt(ps.reduce((s,p)=>s+(p.savings||0),0));
+}
+function computeCAlerts(){
+  const cs=CONTRACTS_DB;
+  document.getElementById('ca-e').textContent=cs.filter(c=>(c.remaining_days||0)<=0).length;
+  document.getElementById('ca-u').textContent=cs.filter(c=>(c.remaining_days||0)>0&&(c.remaining_days||0)<=30).length;
+  document.getElementById('ca-w').textContent=cs.filter(c=>(c.remaining_days||0)>30&&(c.remaining_days||0)<=60).length;
+  document.getElementById('ca-g').textContent=cs.filter(c=>(c.remaining_days||0)>60&&(c.remaining_days||0)<=180).length;
+  document.getElementById('ca-s').textContent=cs.filter(c=>(c.remaining_days||0)>180).length;
+}
+
+// ══════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════
+function rDash(){
+  // Show/hide manager vs officer dashboard
+  const mgr=document.getElementById('managerDash');
+  const reg=document.getElementById('regularDash');
+  const snb=document.getElementById('sendNotifBtn');
+  if(mgr&&reg){mgr.style.display=ADM?'block':'none';reg.style.display=ADM?'none':'block';}
+  if(snb) snb.style.display=ADM?'flex':'none';
+  if(ADM){rDashManager();return;}
+  const ps=vp();
+  document.getElementById('dTitle').textContent=ADM?'Procurement Dashboard':CU+"'s Dashboard";
+  document.getElementById('dSub').textContent=(ADM?'All Officers — ':'Personal Overview — ')+new Date().toLocaleDateString('en-SA',{year:'numeric',month:'long',day:'numeric'});
+  const offs=ADM?OFF:[OFF.find(o=>o.name===CU)||{name:CU,color:oc(CU),bg_color:ob(CU)}];
+  document.getElementById('ownerList').innerHTML=offs.map(o=>{
+    const m=ps.filter(p=>p.business_owner===o.name),dn=m.filter(p=>p.case_status==='Done').length,pct=m.length?Math.round(dn/m.length*100):0;
+    return`<div class="or"><div class="oav" style="background:${o.bg_color};color:${o.color}">${ini(o.name)}</div><div style="flex:1"><div class="on2">${o.name}</div><div class="pb"><div class="pf" style="width:${pct}%"></div></div></div><div class="osts"><span class="os tot">${m.length}</span><span class="os dn">${dn}✓</span><span class="os og">${m.filter(p=>p.case_status==='Ongoing').length}↻</span></div></div>`;
+  }).join('')||'<div class="empty"><div class="empty-t">No data</div></div>';
+  const urg=CONTRACTS_DB.filter(c=>(c.remaining_days||0)<=60).sort((a,b)=>(a.remaining_days||0)-(b.remaining_days||0));
+  document.getElementById('contAlerts').innerHTML=urg.slice(0,8).map(c=>`<div class="cer" onclick="openCDrDB('${c.id}')"><div class="cen">${c.subject||'—'}</div><div class="ced">${c.end_date||'—'}</div><span class="dp ${dpc(c.remaining_days||0)}">${dpl(c.remaining_days||0)}</span></div>`).join('')||'<div style="padding:10px 0;font-size:12px;color:var(--t3)">No urgent alerts</div>';
+  const rec=[...ps].slice(0,8);
+  document.getElementById('recentList').innerHTML=rec.map(p=>`<div class="rr" onclick="openPDr('${p.id}')"><div class="rpr">${p.pr_number||'—'}</div><div><div class="rsj">${p.subject||'—'}</div><div class="rown">${p.business_owner} · ${p.business_unit||'—'}</div></div><span class="badge ${stc(p.case_status)}">${p.case_status||'—'}</span></div>`).join('')||'<div class="empty"><div class="empty-t">No cases yet</div></div>';
+  const prT=ps.reduce((s,p)=>s+(p.pr_value||0),0),svT=ps.reduce((s,p)=>s+(p.savings||0),0);
+  const byT=[...new Set(ps.map(p=>p.proc_type).filter(Boolean))].sort((a,b)=>ps.filter(p=>p.proc_type===b).length-ps.filter(p=>p.proc_type===a).length);
+  document.getElementById('qStats').innerHTML=[
+    ['Total PR Value','SAR '+fmt(prT),'var(--gold)'],
+    ['Total Savings','SAR '+fmt(svT),'var(--green)'],
+    ['Top Proc. Type',byT[0]||'—','var(--acc3)'],
+    ['Active Contracts',CONT.filter(c=>c.rd>0).length+'/'+CONT.length,'var(--t2)'],
+    ['Done Rate',ps.length?Math.round(ps.filter(p=>p.case_status==='Done').length/ps.length*100)+'%':'—','var(--done-c)'],
+    ['Avg PR Value','SAR '+fmt(prT/(ps.length||1)),'var(--t2)'],
+  ].map(([l,v,c])=>`<div class="qs"><div class="qsl">${l}</div><div class="qsv" style="color:${c}">${v}</div></div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+//  PROJECTS TABLE
+// ══════════════════════════════════════════════
+function ptab(f,btn){pTF=f;document.querySelectorAll('.tabs-bar .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');rProj();}
+function gfp(){
+  let d=vp();
+  const q=document.getElementById('pSrch').value.toLowerCase(),ow=document.getElementById('pOwn').value,bu=document.getElementById('pBU').value,co=document.getElementById('pCo').value;
+  const tm={done:'Done',ongoing:'Ongoing',hold:'On-hold'};
+  if(pTF!=='all')d=d.filter(p=>p.case_status===tm[pTF]);
+  if(q)d=d.filter(p=>(p.subject||'').toLowerCase().includes(q)||(p.supplier_name||'').toLowerCase().includes(q)||(p.pr_number||'').toLowerCase().includes(q)||(p.status_notes||'').toLowerCase().includes(q));
+  if(ow)d=d.filter(p=>p.business_owner===ow);
+  if(bu)d=d.filter(p=>p.business_unit===bu);
+  if(co)d=d.filter(p=>p.company===co);
+  d.sort((a,b)=>{let av=a[pSrt.k]||'',bv=b[pSrt.k]||'';const an=parseFloat(av),bn=parseFloat(bv);if(!isNaN(an)&&!isNaN(bn))return(an-bn)*pSrt.d;return String(av).localeCompare(String(bv))*pSrt.d;});
+  return d;
+}
+function rProj(){
+  const d=gfp(),vv=vp();
+  document.getElementById('tc-all').textContent=vv.length;
+  document.getElementById('tc-done').textContent=vv.filter(p=>p.case_status==='Done').length;
+  document.getElementById('tc-on').textContent=vv.filter(p=>p.case_status==='Ongoing').length;
+  document.getElementById('tc-h').textContent=vv.filter(p=>p.case_status==='On-hold').length;
+  document.getElementById('pCt').textContent=d.length+' results';
+  const b=document.getElementById('pBody');
+  if(!d.length){b.innerHTML=`<tr><td colspan="11"><div class="empty"><div class="empty-i">🔍</div><div class="empty-t">No cases found</div></div></td></tr>`;return;}
+  b.innerHTML=d.map(p=>{
+    const pv=p.pr_value||0,pov=p.po_value||0,sv=p.savings||0;
+    return`<tr onclick="openPDr('${p.id}')"><td class="mono">${p.pr_number||'—'}</td><td><span class="badge ${stc(p.case_status)}">${p.case_status||'—'}</span></td><td><div class="subj">${p.subject||'—'}</div>${p.supplier_name?`<div class="supp">🏢 ${p.supplier_name}</div>`:''}</td><td><span style="display:inline-flex;align-items:center;gap:6px">${AV(p.business_owner)}${p.business_owner||'—'}</span></td><td style="font-size:11px;color:var(--t3)">${p.business_unit||'—'}</td><td><span class="badge ${(p.company||'').toLowerCase()}">${p.company||'—'}</span></td><td style="font-size:11px;color:var(--t3)">${p.proc_type||'—'}</td><td class="mono">${p.pr_received_date||'—'}</td><td class="sar${pv>1e6?' big':''}">${pv?fmt(pv):'-'}</td><td class="sar">${pov?fmt(pov):'-'}</td><td class="sar gn">${sv?'▲'+fmt(sv):'-'}</td></tr>`;
+  }).join('');
+}
+function ps(k){if(pSrt.k===k)pSrt.d*=-1;else{pSrt.k=k;pSrt.d=1;}rProj();}
+
+// ══════════════════════════════════════════════
+//  CONTRACTS TABLE
+// ══════════════════════════════════════════════
+function cf(f,el){if(cEF===f){cEF=null;el.classList.remove('on');}else{cEF=f;document.querySelectorAll('.achip').forEach(c=>c.classList.remove('on'));el.classList.add('on');}rCont();}
+function rCont(){
+  let d=[...CONTRACTS_DB];
+  const q=document.getElementById('cSrch').value.toLowerCase(),vt=document.getElementById('cVT').value;
+  if(q)d=d.filter(c=>(c.contract_number||'').toLowerCase().includes(q)||(c.subject||'').toLowerCase().includes(q)||(c.vendor_name||'').toLowerCase().includes(q)||(c.eu_owner||'').toLowerCase().includes(q));
+  if(vt)d=d.filter(c=>c.vendor_type===vt);
+  if(cEF){const fn={exp:d=>d<=0,urg:d=>d>0&&d<=30,warn:d=>d>30&&d<=60,good:d=>d>60&&d<=180,safe:d=>d>180};d=d.filter(c=>fn[cEF](c.remaining_days||0));}
+  document.getElementById('cCt').textContent=d.length+' results';
+  const b=document.getElementById('cBody');
+  b.innerHTML=d.map(c=>{const rd=c.remaining_days||0;return`<tr onclick="openCDrDB('${c.id}')"><td class="mono">${c.contract_number||'—'}</td><td><div class="subj">${c.subject||'—'}</div><div class="supp">🏢 ${c.vendor_name||'—'}</div></td><td style="font-size:12px">${c.eu_owner||'—'}</td><td style="font-size:11px;color:var(--t3)">${c.business_unit||'—'}</td><td><span class="badge ${c.vendor_type==='Local'?'local':'overseas'}">${c.vendor_type||'—'}</span></td><td class="sar${(c.contract_value||0)>1e6?' big':''}">${fmt(c.contract_value)}</td><td class="mono">${c.start_date||'—'}</td><td class="mono">${c.end_date||'—'}</td><td><span class="dp ${dpc(rd)}">${dpl(rd)}</span></td><td style="font-size:11px;color:var(--t3)">${c.remarks||'—'}</td></tr>`}).join('');
+}
+
+// ══════════════════════════════════════════════
+//  MY PAGE
+// ══════════════════════════════════════════════
+function rMine(){
+  if(!CU||ADM)return;
+  const o=OFF.find(x=>x.name===CU)||{name:CU,color:'#64748b',bg_color:'rgba(100,116,139,.18)'};
+  const av=document.getElementById('mpAv');av.style.background=o.bg_color;av.style.color=o.color;av.textContent=ini(CU);
+  document.getElementById('mpNm').textContent=CU;
+  const mine=DATA.filter(p=>p.business_owner===CU);
+  document.getElementById('mpT').textContent=mine.length;
+  document.getElementById('mpD').textContent=mine.filter(p=>p.case_status==='Done').length;
+  document.getElementById('mpO').textContent=mine.filter(p=>p.case_status==='Ongoing').length;
+  document.getElementById('mpP').textContent=fmt(mine.reduce((s,p)=>s+(p.pr_value||0),0));
+  document.getElementById('mpS').textContent=fmt(mine.reduce((s,p)=>s+(p.savings||0),0));
+  let d=[...mine];
+  const q=document.getElementById('mSrch').value.toLowerCase(),st=document.getElementById('mSt').value;
+  if(q)d=d.filter(p=>(p.subject||'').toLowerCase().includes(q)||(p.supplier_name||'').toLowerCase().includes(q)||(p.pr_number||'').toLowerCase().includes(q));
+  if(st)d=d.filter(p=>p.case_status===st);
+  document.getElementById('mCt').textContent=d.length+' results';
+  const b=document.getElementById('mBody');
+  if(!d.length){b.innerHTML=`<tr><td colspan="9"><div class="empty"><div class="empty-i">📋</div><div class="empty-t">No cases yet — click "New Request"</div></div></td></tr>`;return;}
+  b.innerHTML=d.map(p=>{
+    const pv=p.pr_value||0,pov=p.po_value||0,sv=p.savings||0;
+    return`<tr onclick="openPDr('${p.id}')"><td class="mono">${p.pr_number||'—'}</td><td><span class="badge ${stc(p.case_status)}">${p.case_status||'—'}</span></td><td><div class="subj">${p.subject||'—'}</div>${p.supplier_name?`<div class="supp">🏢 ${p.supplier_name}</div>`:''}</td><td style="font-size:11px;color:var(--t3)">${p.business_unit||'—'}</td><td style="font-size:11px;color:var(--t3)">${p.proc_type||'—'}</td><td class="mono">${p.pr_received_date||'—'}</td><td class="sar${pv>1e6?' big':''}">${pv?fmt(pv):'-'}</td><td class="sar">${pov?fmt(pov):'-'}</td><td class="sar gn">${sv?'▲'+fmt(sv):'-'}</td></tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+//  OFFICERS PAGE
+// ══════════════════════════════════════════════
+function rOfficers(){
+  const wrap=document.getElementById('officerCards');if(!wrap)return;
+  wrap.innerHTML=OFF.map(o=>{
+    const mine=DATA.filter(p=>p.business_owner===o.name);
+    const dn=mine.filter(p=>p.case_status==='Done').length;
+    return`<div class="off-card">
+      <div class="off-card-av" style="background:${o.bg_color};color:${o.color}">${ini(o.name)}</div>
+      <div style="flex:1">
+        <div class="off-card-name">${o.name}</div>
+        <span class="seed-badge" style="${o.is_default?'':'color:var(--acc3);background:rgba(37,99,235,.1)'}">${o.is_default?'Default':'Custom'}</span>
+        <div class="off-card-stats">
+          <span class="os tot">${mine.length} cases</span>
+          <span class="os dn">${dn} done</span>
+          <span class="os og">${mine.filter(p=>p.case_status==='Ongoing').length} ongoing</span>
+        </div>
+      </div>
+      <button class="off-edit-btn" onclick="openOffModal('${o.name}')">Edit</button>
+    </div>`;
+  }).join('');
+}
+
+function openOffModal(name){
+  _offEdit=name||null;
+  document.getElementById('offMoTitle').textContent=name?'Edit Officer':'Add Officer';
+  document.getElementById('of-name').value=name||'';
+  document.getElementById('of-name').disabled=!!name;
+  document.getElementById('offDel').style.display=name?'block':'none';
+  document.querySelectorAll('.cpick').forEach(c=>c.classList.remove('sel'));
+  _selColor=null;_selBg=null;
+  if(name){
+    const o=OFF.find(x=>x.name===name);
+    if(o){_selColor=o.color;_selBg=o.bg_color;const m=document.querySelector(`.cpick[data-c="${o.color}"]`);if(m)m.classList.add('sel');document.getElementById('colorPreview').style.background=o.color;}
+  } else {
+    document.getElementById('colorPreview').style.background='transparent';
+  }
+  document.getElementById('offMo').classList.add('open');
+}
+function closeOffMo(){document.getElementById('offMo').classList.remove('open');}
+
+document.addEventListener('click',e=>{
+  const cp=e.target.closest('.cpick');if(!cp)return;
+  document.querySelectorAll('.cpick').forEach(c=>c.classList.remove('sel'));
+  cp.classList.add('sel');_selColor=cp.dataset.c;_selBg=cp.dataset.b;
+  document.getElementById('colorPreview').style.background=_selColor;
+});
+
+async function saveOfficer(){
+  const name=document.getElementById('of-name').value.trim();
+  if(!name){toast('Name is required','err');return;}
+  if(!_selColor){toast('Please pick a color','err');return;}
+  const obj={name,color:_selColor,bg_color:_selBg,is_default:false};
+  loading(true,_offEdit?'Updating officer…':'Adding officer…');
+  let err;
+  if(_offEdit){
+    const r=await sb.from('officers').update({color:_selColor,bg_color:_selBg}).eq('name',_offEdit);err=r.error;
+  } else {
+    if(OFF.find(o=>o.name===name)){loading(false);toast('Officer already exists','err');return;}
+    const r=await sb.from('officers').insert([obj]);err=r.error;
+  }
+  loading(false);
+  if(err){toast('Error: '+err.message,'err');return;}
+  const {data}=await sb.from('officers').select('*').order('created_at');
+  if(data){OFF=data;buildLoginCards();rOfficers();}
+  closeOffMo();toast(_offEdit?'Officer updated ✓':'Officer added ✓');
+}
+
+async function delOfficer(){
+  if(!_offEdit)return;
+  const o=OFF.find(x=>x.name===_offEdit);
+  if(o?.is_default){toast('Cannot remove default officers','err');return;}
+  if(!confirm('Remove "'+_offEdit+'"?'))return;
+  loading(true,'Removing officer…');
+  await sb.from('officers').delete().eq('name',_offEdit);
+  const {data}=await sb.from('officers').select('*').order('created_at');
+  if(data){OFF=data;buildLoginCards();rOfficers();}
+  loading(false);closeOffMo();toast('Officer removed');
+}
+
+// ══════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════
+function showPage(n,btn){
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('page-'+n).classList.add('active');
+  if(n==='mine')rMine();if(n==='dash')rDash();if(n==='officers')rOfficers();if(n==='logs')rLogs();if(n==='notifs')rNotifs();
+}
+
+// ══════════════════════════════════════════════
+//  DRAWERS
+// ══════════════════════════════════════════════
+function openPDr(id){
+  const p=DATA.find(x=>x.id===id);if(!p)return;
+  _di=id;
+  const pv=p.pr_value||0,pov=p.po_value||0,sv=p.savings||0;
+  document.getElementById('dTit').textContent=p.subject||'Case Detail';
+  document.getElementById('dBody').innerHTML=`<div class="dg">
+    <div class="di"><div class="dl">Status</div><div class="dv"><span class="badge ${stc(p.case_status)}">${p.case_status||'—'}</span></div></div>
+    <div class="di"><div class="dl">PR #</div><div class="dv mono">${p.pr_number||'—'}</div></div>
+    <div class="di"><div class="dl">Company</div><div class="dv"><span class="badge ${(p.company||'').toLowerCase()}">${p.company||'—'}</span></div></div>
+    <div class="di"><div class="dl">Quarter / Year</div><div class="dv mono">${p.quarter||'—'} · ${p.year||'—'}</div></div>
+    <div class="di"><div class="dl">Business Owner</div><div class="dv" style="display:flex;align-items:center;gap:7px">${AV(p.business_owner)}${p.business_owner||'—'}</div></div>
+    <div class="di"><div class="dl">Business Unit</div><div class="dv">${p.business_unit||'—'}</div></div>
+    <div class="di"><div class="dl">Supplier</div><div class="dv">${p.supplier_name||'—'}</div></div>
+    <div class="di"><div class="dl">Proc. Type</div><div class="dv">${p.proc_type||'—'}</div></div>
+    <div class="di"><div class="dl">PR Received Date</div><div class="dv mono">${p.pr_received_date||'—'}</div></div>
+    <div class="di"><div class="dl">PO #</div><div class="dv mono">${p.po_number||'—'}</div></div>
+    <div class="ddiv"></div>
+    <div class="di"><div class="dl">PR Value (SAR)</div><div class="dv big gold">${pv?pv.toLocaleString('en-SA',{maximumFractionDigits:0}):'—'}</div></div>
+    <div class="di"><div class="dl">PO Value (SAR)</div><div class="dv big">${pov?pov.toLocaleString('en-SA',{maximumFractionDigits:0}):'—'}</div></div>
+    <div class="di full"><div class="dl">Savings (SAR)</div><div class="dv big gn">${sv?'▲ '+sv.toLocaleString('en-SA',{maximumFractionDigits:0}):'—'}</div></div>
+    <div class="ddiv"></div>
+    <div class="di full"><div class="dl">Status Notes</div><div class="dv notes">${p.status_notes||'—'}</div></div>
+  </div>`;
+  _currentItemTitle = p.subject;
+  document.getElementById('dEdit').style.display='flex';
+  openDr();
+  loadComments(p.id,'project');
+}
+function openCDrDB(id){
+  _di=null;const c=CONTRACTS_DB.find(x=>x.id===id);if(!c)return;
+  const rd=c.remaining_days||0;
+  document.getElementById('dTit').textContent=c.subject||'Contract Detail';
+  document.getElementById('dBody').innerHTML=`<div class="dg">
+    <div class="di"><div class="dl">Contract No.</div><div class="dv mono">${c.contract_number||'—'}</div></div>
+    <div class="di"><div class="dl">Expiry</div><div class="dv"><span class="dp ${dpc(rd)}">${dpl(rd)}</span></div></div>
+    <div class="di"><div class="dl">EU Owner</div><div class="dv">${c.eu_owner||'—'}</div></div>
+    <div class="di"><div class="dl">Business Unit</div><div class="dv">${c.business_unit||'—'}</div></div>
+    <div class="di"><div class="dl">Vendor Name</div><div class="dv">${c.vendor_name||'—'}</div></div>
+    <div class="di"><div class="dl">Vendor Type</div><div class="dv"><span class="badge ${c.vendor_type==='Local'?'local':'overseas'}">${c.vendor_type||'—'}</span></div></div>
+    <div class="di"><div class="dl">Contract Value (SAR)</div><div class="dv big gold">${c.contract_value?c.contract_value.toLocaleString('en-SA',{maximumFractionDigits:0}):'—'}</div></div>
+    <div class="di"><div class="dl">OA Number</div><div class="dv mono">${c.outline_agreement||'—'}</div></div>
+    <div class="di"><div class="dl">Start Date</div><div class="dv mono">${c.start_date||'—'}</div></div>
+    <div class="di"><div class="dl">End Date</div><div class="dv mono">${c.end_date||'—'}</div></div>
+    <div class="ddiv"></div>
+    <div class="di full"><div class="dl">Subject</div><div class="dv">${c.subject||'—'}</div></div>
+    <div class="di full"><div class="dl">Remarks</div><div class="dv notes">${c.remarks||'—'}</div></div>
+  </div>`;
+  // Edit button for all users
+  const eb=document.getElementById('dEdit');
+  eb.style.display='flex';
+  eb.onclick=()=>{_cEdit=id;openEditCont(c);closeDr();};
+  openDr();
+  _currentItemTitle = c.subject;
+  loadComments(id,'contract');
+}
+function openEditCont(c){
+  document.getElementById('contMoTitle').textContent='Edit Contract';
+  document.getElementById('contDel').style.display='block'; // all users can delete
+  document.getElementById('c-num').value=c.contract_number||'';
+  document.getElementById('c-subj').value=c.subject||'';
+  document.getElementById('c-vn').value=c.vendor_name||'';
+  document.getElementById('c-eu').value=c.eu_owner||'';
+  document.getElementById('c-bu').value=c.business_unit||'';
+  document.getElementById('c-vt').value=c.vendor_type||'Local';
+  document.getElementById('c-cv').value=c.contract_value||'';
+  document.getElementById('c-oa').value=c.outline_agreement||'';
+  document.getElementById('c-sd').value=c.start_date||'';
+  document.getElementById('c-ed').value=c.end_date||'';
+  document.getElementById('c-rem').value=c.remarks||'';
+  document.getElementById('contMo').classList.add('open');
+}
+function openCDr(i){
+  _di=null;const c=CONT[i];
+  document.getElementById('dTit').textContent=c.s||'Contract Detail';
+  document.getElementById('dBody').innerHTML=`<div class="dg">
+    <div class="di"><div class="dl">Contract No.</div><div class="dv mono">${c.n}</div></div>
+    <div class="di"><div class="dl">Expiry</div><div class="dv"><span class="dp ${dpc(c.rd)}">${dpl(c.rd)}</span></div></div>
+    <div class="di"><div class="dl">EU Owner</div><div class="dv">${c.eu}</div></div>
+    <div class="di"><div class="dl">Business Unit</div><div class="dv">${c.bu||'—'}</div></div>
+    <div class="di"><div class="dl">Vendor Name</div><div class="dv">${c.vn}</div></div>
+    <div class="di"><div class="dl">Vendor Type</div><div class="dv"><span class="badge ${c.vt==='Local'?'local':'overseas'}">${c.vt}</span></div></div>
+    <div class="di"><div class="dl">Contract Value (SAR)</div><div class="dv big gold">${c.cv?c.cv.toLocaleString('en-SA',{maximumFractionDigits:0}):'—'}</div></div>
+    <div class="di"><div class="dl">OA Number</div><div class="dv mono">${c.oa||'—'}</div></div>
+    <div class="di"><div class="dl">Start Date</div><div class="dv mono">${c.sd}</div></div>
+    <div class="di"><div class="dl">End Date</div><div class="dv mono">${c.ed}</div></div>
+    <div class="ddiv"></div>
+    <div class="di full"><div class="dl">Subject</div><div class="dv">${c.s}</div></div>
+    <div class="di full"><div class="dl">Remarks</div><div class="dv notes">${c.r||'—'}</div></div>
+  </div>`;
+  document.getElementById('dEdit').style.display='none';openDr();
+}
+function openDr(){document.getElementById('drawer').classList.add('open');document.getElementById('dov').classList.add('open');document.body.style.overflow='hidden';}
+function closeDr(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('dov').classList.remove('open');
+  document.body.style.overflow='';
+  document.getElementById('commentsSection').style.display='none';
+  document.getElementById('commentsList').innerHTML='';
+  document.getElementById('commentInput').value='';
+  _currentItemId=null;_currentItemType=null;
+  // unsubscribe from comment channels
+  sb.getChannels().forEach(ch=>{if(ch.topic.startsWith('comments-'))sb.removeChannel(ch);});
+}
+
+// ══════════════════════════════════════════════
+//  ADD / EDIT MODAL
+// ══════════════════════════════════════════════
+function openAdd(){
+  _ei=null;
+  document.getElementById('mTitle').textContent='Add New Case';
+  document.getElementById('mDel').style.display='none';
+  ['f-pr','f-sj','f-sp','f-po','f-nt'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-st').value='Ongoing';document.getElementById('f-co').value='SEVEN';document.getElementById('f-yr').value='2026';
+  ['f-pv','f-pov','f-sv'].forEach(id=>document.getElementById(id).value='');
+  ['f-pd','f-pd2'].forEach(id=>document.getElementById(id).value='');
+  if(!ADM)document.getElementById('f-ow').value=CU;
+  document.getElementById('mo').classList.add('open');
+}
+function editFromDr(){
+  if(!_di)return;const p=DATA.find(x=>x.id===_di);if(!p)return;
+  _ei=_di;
+  document.getElementById('mTitle').textContent='Edit Case';
+  document.getElementById('mDel').style.display='block';
+  document.getElementById('f-pr').value=p.pr_number||'';
+  document.getElementById('f-st').value=p.case_status||'Ongoing';
+  document.getElementById('f-sj').value=p.subject||'';
+  document.getElementById('f-sp').value=p.supplier_name||'';
+  document.getElementById('f-ow').value=p.business_owner||'';
+  document.getElementById('f-bu').value=p.business_unit||'';
+  document.getElementById('f-co').value=p.company||'SEVEN';
+  document.getElementById('f-ty').value=p.proc_type||'RFQ';
+  document.getElementById('f-pd').value=p.pr_received_date||'';
+  document.getElementById('f-yr').value=p.year||'2026';
+  document.getElementById('f-pv').value=p.pr_value||'';
+  document.getElementById('f-po').value=p.po_number||'';
+  document.getElementById('f-pd2').value=p.po_signing_date||'';
+  document.getElementById('f-pov').value=p.po_value||'';
+  document.getElementById('f-sv').value=p.savings||'';
+  document.getElementById('f-nt').value=p.status_notes||'';
+  closeDr();document.getElementById('mo').classList.add('open');
+}
+
+async function saveCase(){
+  const sj=document.getElementById('f-sj').value.trim();
+  if(!sj){toast('Subject is required','err');return;}
+  const obj={
+    pr_number:document.getElementById('f-pr').value.trim()||null,
+    year:document.getElementById('f-yr').value,
+    quarter:'Q'+Math.ceil((new Date().getMonth()+1)/3),
+    case_status:document.getElementById('f-st').value,
+    company:document.getElementById('f-co').value,
+    business_unit:document.getElementById('f-bu').value,
+    business_owner:document.getElementById('f-ow').value,
+    pr_received_date:document.getElementById('f-pd').value||null,
+    proc_type:document.getElementById('f-ty').value,
+    subject:sj,
+    supplier_name:document.getElementById('f-sp').value||null,
+    status_notes:document.getElementById('f-nt').value||null,
+    pr_value:parseFloat(document.getElementById('f-pv').value)||0,
+    po_number:document.getElementById('f-po').value||null,
+    po_signing_date:document.getElementById('f-pd2').value||null,
+    po_value:parseFloat(document.getElementById('f-pov').value)||0,
+    savings:parseFloat(document.getElementById('f-sv').value)||0,
+    updated_at:new Date().toISOString()
+  };
+  loading(true,_ei?'Updating…':'Saving…');
+  let error;
+  if(_ei){const r=await sb.from('projects').update(obj).eq('id',_ei);error=r.error;}
+  else{const r=await sb.from('projects').insert([obj]);error=r.error;}
+  if(error){loading(false);toast('Error: '+error.message,'err');return;}
+  const action2=_ei?'edited':'added';
+  await addLog(CU,action2,'Project',obj.subject,(action2==='added'?'Added':'Updated')+' project: '+(obj.pr_number||'—')+' — '+obj.subject);
+  await loadData();
+  populateFilters();computeKPIs();rDash();rProj();rCont();if(!ADM)rMine();
+  loading(false);closeMo();toast(_ei?'Case updated ✓':'Case added ✓');
+}
+
+async function delCase(){
+  if(!_ei)return;
+  if(!confirm('Delete this case?'))return;
+  loading(true,'Deleting…');
+  const dp=DATA.find(x=>x.id===_ei);
+  await sb.from('projects').delete().eq('id',_ei);
+  await addLog(CU,'deleted','Project',dp?.subject,'Deleted project: '+(dp?.pr_number||'—')+' — '+dp?.subject);
+  await loadData();
+  computeKPIs();rDash();rProj();rCont();if(!ADM)rMine();
+  loading(false);closeMo();toast('Case deleted');
+}
+function closeMo(){document.getElementById('mo').classList.remove('open');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeDr();closeMo();closeOffMo();}});
+
+
+
+// ══════════════════════════════════════════════
+//  MANAGER ADVANCED DASHBOARD
+// ══════════════════════════════════════════════
+let _charts = {};
+
+function destroyCharts(){
+  Object.values(_charts).forEach(c=>{try{c.destroy();}catch(e){}});
+  _charts={};
+}
+
+function rDashManager(){
+  destroyCharts();
+  const ps = DATA;
+  const cs = CONTRACTS_DB;
+
+  // KPI Row
+  const done=ps.filter(p=>p.case_status==='Done').length;
+  const ongoing=ps.filter(p=>p.case_status==='Ongoing').length;
+  const onhold=ps.filter(p=>p.case_status==='On-hold').length;
+  const prVal=ps.reduce((s,p)=>s+(p.pr_value||0),0);
+  const savings=ps.reduce((s,p)=>s+(p.savings||0),0);
+  const expiring=cs.filter(c=>(c.remaining_days||0)>0&&(c.remaining_days||0)<=30).length;
+  const doneRate=ps.length?Math.round(done/ps.length*100):0;
+
+  document.getElementById('advKpis').innerHTML=[
+    ['Total Cases',ps.length,'all projects','blue'],
+    ['Done',done,doneRate+'% completion rate','green'],
+    ['Ongoing',ongoing,'active cases','orange'],
+    ['On Hold',onhold,'pending cases','purple'],
+    ['Expiring Soon',expiring,'contracts ≤30 days','red'],
+    ['Total PR Value','SAR '+fmt(prVal),'combined','gold'],
+    ['Total Savings','SAR '+fmt(savings),'achieved','green'],
+    ['Done Rate',doneRate+'%','completion','blue'],
+  ].map(([l,v,s,c])=>`<div class="kpi-mini ${c}"><div class="kpi-mini-l">${l}</div><div class="kpi-mini-v">${v}</div><div class="kpi-mini-s">${s}</div></div>`).join('');
+
+  const chartDefaults={
+    plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+    scales:{x:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'rgba(30,53,88,.5)'}},y:{ticks:{color:'#64748b',font:{size:10}},grid:{color:'rgba(30,53,88,.5)'}}}
+  };
+
+  // Chart 1: Status donut
+  const statusCounts={Done:done,Ongoing:ongoing,'On-hold':onhold};
+  _charts.status=new Chart(document.getElementById('chartStatus'),{
+    type:'doughnut',
+    data:{labels:Object.keys(statusCounts),datasets:[{data:Object.values(statusCounts),backgroundColor:['#10b981','#f59e0b','#94a3b8'],borderWidth:0,hoverOffset:6}]},
+    options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:11},padding:14}}},cutout:'65%'}
+  });
+
+  // Chart 2: Cases by Officer bar
+  const offNames=OFF.map(o=>o.name);
+  const offCounts=offNames.map(n=>ps.filter(p=>p.business_owner===n).length);
+  const offColors=OFF.map(o=>o.color);
+  _charts.officer=new Chart(document.getElementById('chartOfficer'),{
+    type:'bar',
+    data:{labels:offNames,datasets:[{label:'Cases',data:offCounts,backgroundColor:offColors.map(c=>c+'99'),borderColor:offColors,borderWidth:2,borderRadius:6}]},
+    options:{...chartDefaults,plugins:{legend:{display:false}}}
+  });
+
+  // Chart 3: By Quarter
+  const quarters=[...new Set(ps.map(p=>p.quarter).filter(Boolean))].sort();
+  const qDone=quarters.map(q=>ps.filter(p=>p.quarter===q&&p.case_status==='Done').length);
+  const qOngoing=quarters.map(q=>ps.filter(p=>p.quarter===q&&p.case_status==='Ongoing').length);
+  _charts.quarter=new Chart(document.getElementById('chartQuarter'),{
+    type:'bar',
+    data:{labels:quarters,datasets:[
+      {label:'Done',data:qDone,backgroundColor:'#10b98166',borderColor:'#10b981',borderWidth:2,borderRadius:4},
+      {label:'Ongoing',data:qOngoing,backgroundColor:'#f59e0b66',borderColor:'#f59e0b',borderWidth:2,borderRadius:4}
+    ]},
+    options:{...chartDefaults,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}}}
+  });
+
+  // Chart 4: By BU horizontal
+  const bus=[...new Set(ps.map(p=>p.business_unit).filter(Boolean))];
+  const buCounts=bus.map(b=>ps.filter(p=>p.business_unit===b).length);
+  const buSorted=bus.map((b,i)=>({b,c:buCounts[i]})).sort((a,z)=>z.c-a.c).slice(0,8);
+  _charts.bu=new Chart(document.getElementById('chartBU'),{
+    type:'bar',
+    data:{labels:buSorted.map(x=>x.b),datasets:[{label:'Cases',data:buSorted.map(x=>x.c),backgroundColor:'#3b82f666',borderColor:'#3b82f6',borderWidth:2,borderRadius:4}]},
+    options:{indexAxis:'y',...chartDefaults,plugins:{legend:{display:false}}}
+  });
+
+  // Chart 5: PR Value by Officer
+  const offPRV=offNames.map(n=>ps.filter(p=>p.business_owner===n).reduce((s,p)=>s+(p.pr_value||0),0)/1e6);
+  _charts.prv=new Chart(document.getElementById('chartPRV'),{
+    type:'bar',
+    data:{labels:offNames,datasets:[{label:'PR Value (M SAR)',data:offPRV.map(v=>Math.round(v*10)/10),backgroundColor:offColors.map(c=>c+'88'),borderColor:offColors,borderWidth:2,borderRadius:6}]},
+    options:{...chartDefaults,plugins:{legend:{display:false}},scales:{...chartDefaults.scales,y:{...chartDefaults.scales.y,ticks:{...chartDefaults.scales.y.ticks,callback:v=>v+'M'}}}}
+  });
+
+  // Chart 6: Completion rate by officer
+  const offRate=offNames.map(n=>{const m=ps.filter(p=>p.business_owner===n);return m.length?Math.round(m.filter(p=>p.case_status==='Done').length/m.length*100):0;});
+  _charts.completion=new Chart(document.getElementById('chartCompletion'),{
+    type:'bar',
+    data:{labels:offNames,datasets:[{label:'Done %',data:offRate,backgroundColor:offRate.map(r=>r>=75?'#10b98188':r>=50?'#f59e0b88':'#ef444488'),borderColor:offRate.map(r=>r>=75?'#10b981':r>=50?'#f59e0b':'#ef4444'),borderWidth:2,borderRadius:6}]},
+    options:{...chartDefaults,plugins:{legend:{display:false}},scales:{...chartDefaults.scales,y:{...chartDefaults.scales.y,max:100,ticks:{...chartDefaults.scales.y.ticks,callback:v=>v+'%'}}}}
+  });
+
+  // Chart 7: Contract expiry donut
+  const expCounts={
+    'Expired':cs.filter(c=>(c.remaining_days||0)<=0).length,
+    '<30d':cs.filter(c=>(c.remaining_days||0)>0&&(c.remaining_days||0)<=30).length,
+    '31-60d':cs.filter(c=>(c.remaining_days||0)>30&&(c.remaining_days||0)<=60).length,
+    '61-180d':cs.filter(c=>(c.remaining_days||0)>60&&(c.remaining_days||0)<=180).length,
+    '>180d':cs.filter(c=>(c.remaining_days||0)>180).length,
+  };
+  _charts.expiry=new Chart(document.getElementById('chartExpiry'),{
+    type:'doughnut',
+    data:{labels:Object.keys(expCounts),datasets:[{data:Object.values(expCounts),backgroundColor:['#ef444488','#f9731688','#eab30888','#10b98188','#64748b88'],borderColor:['#ef4444','#f97316','#eab308','#10b981','#64748b'],borderWidth:2}]},
+    options:{plugins:{legend:{position:'bottom',labels:{color:'#94a3b8',font:{size:10},padding:10}}},cutout:'60%'}
+  });
+}
+
+// ══════════════════════════════════════════════
+//  SEND NOTIFICATION (Manager)
+// ══════════════════════════════════════════════
+function openSendNotif(){
+  // Populate recipients
+  const sel=document.getElementById('notifTo');
+  sel.innerHTML='<option value="all">📢 All Officers</option>';
+  OFF.forEach(o=>{
+    const opt=document.createElement('option');
+    opt.value=o.name;opt.textContent=o.name;sel.appendChild(opt);
+  });
+  document.getElementById('notifMsg').value='';
+  document.getElementById('sendNotifMo').classList.add('open');
+}
+function closeSendNotif(){document.getElementById('sendNotifMo').classList.remove('open');}
+
+async function sendManagerNotif(){
+  const to=document.getElementById('notifTo').value;
+  const msg=document.getElementById('notifMsg').value.trim();
+  if(!msg){toast('Please write a message','err');return;}
+  loading(true,'Sending…');
+  const recipients=to==='all'?OFF.map(o=>o.name):[to];
+  const rows=recipients.map(r=>({
+    recipient:r,sender:'Manager',
+    message:'📢 Manager: '+msg,
+    project_title:null,project_id:null,
+    is_read:false,created_at:new Date().toISOString()
+  }));
+  try{
+    await sb.from('notifications').insert(rows);
+    loading(false);closeSendNotif();
+    toast('Notification sent to '+(to==='all'?'all officers':to)+' ✓');
+  }catch(e){loading(false);toast('Error: '+e.message,'err');}
+}
+// ══════════════════════════════════════════════
+//  CONTRACTS (Supabase)
+// ══════════════════════════════════════════════
+let CONTRACTS_DB = [];
+let _cEdit = null;
+
+async function loadContracts(){
+  try{
+    const {data,error}=await sb.from('contracts').select('*').order('created_at');
+    if(!error&&data&&data.length>0){
+      const today=new Date();today.setHours(0,0,0,0);
+      CONTRACTS_DB=data;
+      CONTRACTS_DB.forEach(c=>{if(c.end_date){const ed=new Date(c.end_date);c.remaining_days=Math.round((ed-today)/(1000*60*60*24));}else c.remaining_days=0;});
+    }
+  }catch(e){console.log('contracts table not ready yet');}
+}
+
+function openAddCont(){
+  _cEdit=null;
+  document.getElementById('contMoTitle').textContent='Add Contract';
+  document.getElementById('contDel').style.display='none';
+  ['c-num','c-subj','c-vn','c-eu','c-oa','c-rem'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('c-vt').value='Local';
+  document.getElementById('c-bu').value='';
+  document.getElementById('c-cv').value='';
+  document.getElementById('c-sd').value='';
+  document.getElementById('c-ed').value='';
+  document.getElementById('contMo').classList.add('open');
+}
+function closeContMo(){document.getElementById('contMo').classList.remove('open');}
+
+async function saveContract(){
+  const num=document.getElementById('c-num').value.trim();
+  const subj=document.getElementById('c-subj').value.trim();
+  if(!num||!subj){toast('Contract No. and Subject are required','err');return;}
+  const obj={
+    contract_number:num,
+    subject:subj,
+    vendor_name:document.getElementById('c-vn').value||null,
+    eu_owner:document.getElementById('c-eu').value||null,
+    business_unit:document.getElementById('c-bu').value||null,
+    vendor_type:document.getElementById('c-vt').value,
+    contract_value:parseFloat(document.getElementById('c-cv').value)||0,
+    outline_agreement:document.getElementById('c-oa').value||null,
+    start_date:document.getElementById('c-sd').value||null,
+    end_date:document.getElementById('c-ed').value||null,
+    remarks:document.getElementById('c-rem').value||null,
+    updated_at:new Date().toISOString()
+  };
+  loading(true,_cEdit?'Updating contract…':'Saving contract…');
+  let error;
+  if(_cEdit){const r=await sb.from('contracts').update(obj).eq('id',_cEdit);error=r.error;}
+  else{const r=await sb.from('contracts').insert([obj]);error=r.error;}
+  if(error){
+    if(error.message&&error.message.includes('does not exist')){
+      loading(false);
+      toast('Run the SQL setup first in Supabase to enable contracts','err');
+      return;
+    }
+    loading(false);toast('Error: '+error.message,'err');return;
+  }
+  const action=_cEdit?'edited':'added';
+  await addLog(CU,action,'Contract',subj,`${action==='added'?'Added':'Updated'} contract: ${num} — ${subj}`);
+  await loadContracts();
+  computeCAlerts();rCont();rDash();
+  loading(false);closeContMo();toast(_cEdit?'Contract updated ✓':'Contract added ✓');
+}
+
+async function delContract(){
+  if(!_cEdit)return;
+  const c=CONTRACTS_DB.find(x=>x.id===_cEdit);
+  if(!confirm('Delete contract "'+c?.contract_number+'"?'))return;
+  loading(true,'Deleting…');
+  await sb.from('contracts').delete().eq('id',_cEdit);
+  await addLog(CU,'deleted','Contract',c?.subject,'Deleted contract: '+c?.contract_number+' — '+c?.subject);
+  await loadContracts();
+  computeCAlerts();rCont();rDash();
+  loading(false);closeContMo();toast('Contract deleted');
+}
+
+// ══════════════════════════════════════════════
+//  ACTIVITY LOGS
+// ══════════════════════════════════════════════
+async function addLog(who,action,type,title,details){
+  try{
+    await sb.from('activity_logs').insert([{
+      officer_name:who,action,item_type:type,item_title:title,details,created_at:new Date().toISOString()
+    }]);
+  }catch(e){console.log('activity_logs not ready');}
+}
+
+async function rLogs(){
+  let data=[];
+  try{
+    const r=await sb.from('activity_logs').select('*').order('created_at',{ascending:false}).limit(100);
+    data=r.data||[];
+  }catch(e){
+    document.getElementById('logsList').innerHTML='<div class="empty"><div class="empty-i">⚠️</div><div class="empty-t">Run SQL setup in Supabase to enable logs</div></div>';
+    return;
+  }
+  if(!data.length){document.getElementById('logsList').innerHTML='<div class="empty"><div class="empty-i">📋</div><div class="empty-t">No activity yet</div></div>';return;}
+  document.getElementById('logCount').textContent=data.length+' entries';
+  const icons={added:'➕',edited:'✏️',deleted:'🗑️'};
+  const colors={added:'log-add',edited:'log-edit',deleted:'log-del'};
+  document.getElementById('logsList').innerHTML=data.map(l=>{
+    const dt=new Date(l.created_at);
+    const when=dt.toLocaleDateString('en-SA',{year:'numeric',month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-SA',{hour:'2-digit',minute:'2-digit'});
+    return`<div class="log-row ${colors[l.action]||''}">
+      <div class="log-icon">${icons[l.action]||'📋'}</div>
+      <div class="log-body">
+        <div class="log-who">${l.officer_name||'—'} <span style="font-weight:400;color:var(--t3)">${l.action||''} ${l.item_type||''}</span></div>
+        <div class="log-what">${l.item_title||''}</div>
+        ${l.details&&l.details!==l.item_title?`<div class="log-what" style="color:var(--t3);font-size:11px">${l.details}</div>`:''}
+        <div class="log-when">${when}</div>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty"><div class="empty-i">📋</div><div class="empty-t">No activity yet</div></div>';
+}
+
+// ══════════════════════════════════════════════
+//  EXPORT EXCEL
+// ══════════════════════════════════════════════
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  // Projects sheet
+  const ps=vp();
+  const pRows=ps.map(p=>({
+    'PR #':p.pr_number||'',
+    'Year':p.year||'',
+    'Quarter':p.quarter||'',
+    'Case Status':p.case_status||'',
+    'Company':p.company||'',
+    'Business Unit':p.business_unit||'',
+    'Business Owner':p.business_owner||'',
+    'PR Received Date':p.pr_received_date||'',
+    'Proc. Type':p.proc_type||'',
+    'Subject':p.subject||'',
+    'Supplier Name':p.supplier_name||'',
+    'Status Notes':p.status_notes||'',
+    'PR Value (SAR)':p.pr_value||0,
+    'PO #':p.po_number||'',
+    'PO Signing Date':p.po_signing_date||'',
+    'PO Value (SAR)':p.po_value||0,
+    'Savings (SAR)':p.savings||0,
+  }));
+  const ws1=XLSX.utils.json_to_sheet(pRows);
+  ws1['!cols']=[{wch:15},{wch:6},{wch:5},{wch:10},{wch:8},{wch:22},{wch:12},{wch:16},{wch:12},{wch:40},{wch:25},{wch:50},{wch:14},{wch:13},{wch:15},{wch:14},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws1,'Projects');
+  // Contracts sheet
+  const cRows=CONTRACTS_DB.map(c=>({
+    'Contract No.':c.contract_number||'',
+    'Subject':c.subject||'',
+    'EU Owner':c.eu_owner||'',
+    'Business Unit':c.business_unit||'',
+    'Vendor Name':c.vendor_name||'',
+    'Vendor Type':c.vendor_type||'',
+    'Contract Value (SAR)':c.contract_value||0,
+    'Start Date':c.start_date||'',
+    'End Date':c.end_date||'',
+    'Remaining Days':c.remaining_days||0,
+    'Outline Agreement':c.outline_agreement||'',
+    'Remarks':c.remarks||'',
+  }));
+  const ws2=XLSX.utils.json_to_sheet(cRows);
+  ws2['!cols']=[{wch:14},{wch:50},{wch:20},{wch:22},{wch:25},{wch:10},{wch:18},{wch:12},{wch:12},{wch:14},{wch:16},{wch:20}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Contracts');
+  // Logs sheet
+  const {data:logs}=[];
+  const now=new Date();
+  const fname=`SEVEN_Procurement_${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}.xlsx`;
+  XLSX.writeFile(wb,fname);
+  toast('Excel exported ✓');
+}
+
+// ══════════════════════════════════════════════
+//  WEEKLY EMAIL via Supabase Edge Function
+// ══════════════════════════════════════════════
+// Weekly reports are handled by a Supabase scheduled function
+// The export button above handles manual downloads
+
+
+// ══════════════════════════════════════════════
+//  COMMENTS & MENTIONS
+// ══════════════════════════════════════════════
+let _currentItemId = null;
+let _currentItemType = null;
+let _currentItemTitle = null;
+let _mentionQuery = '';
+let _mentionStart = -1;
+
+async function loadComments(itemId, itemType){
+  _currentItemId = itemId;
+  _currentItemType = itemType;
+  const section = document.getElementById('commentsSection');
+  section.style.display = 'block';
+  // Set commenter avatar
+  const av = document.getElementById('commentAv');
+  av.style.background = ob(CU); av.style.color = oc(CU); av.textContent = ini(CU);
+  // Load comments
+  const field = itemType === 'project' ? 'project_id' : 'contract_id';
+  try {
+    const {data} = await sb.from('comments').select('*').eq(field, itemId).order('created_at');
+    renderComments(data || []);
+  } catch(e){ console.log('comments not ready'); }
+  // Subscribe to new comments on this item
+  sb.channel('comments-'+itemId)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'comments',filter:`${field}=eq.${itemId}`}, async()=>{
+      const {data} = await sb.from('comments').select('*').eq(field, itemId).order('created_at');
+      renderComments(data || []);
+    }).subscribe();
+}
+
+function renderComments(comments){
+  const el = document.getElementById('commentsList');
+  if(!comments.length){ el.innerHTML='<div style="font-size:12px;color:var(--t3);padding:8px 0">No comments yet — be the first!</div>'; return; }
+  el.innerHTML = comments.map(c=>{
+    const dt = new Date(c.created_at);
+    const when = dt.toLocaleDateString('en-SA',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-SA',{hour:'2-digit',minute:'2-digit'});
+    // Highlight mentions
+    const text = (c.content||'').replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    return`<div class="comment-row">
+      <div class="comment-av" style="background:${ob(c.author)};color:${oc(c.author)}">${ini(c.author)}</div>
+      <div class="comment-body">
+        <span class="comment-author">${c.author}</span>
+        <span class="comment-time">${when}</span>
+        <div class="comment-text">${text}</div>
+      </div>
+    </div>`;
+  }).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function handleMentionInput(el){
+  const val = el.value;
+  const pos = el.selectionStart;
+  // Find @ before cursor
+  let atIdx = -1;
+  for(let i=pos-1;i>=0;i--){
+    if(val[i]==='@'){atIdx=i;break;}
+    if(val[i]===' '||val[i]==='\n'){break;}
+  }
+  const dropdown = document.getElementById('mentionDropdown');
+  if(atIdx>=0){
+    _mentionQuery = val.slice(atIdx+1, pos).toLowerCase();
+    _mentionStart = atIdx;
+    const matches = OFF.filter(o=>o.name.toLowerCase().includes(_mentionQuery));
+    if(matches.length){
+      dropdown.style.display='block';
+      dropdown.innerHTML = matches.map(o=>`<div class="mention-item" onclick="insertMention('${o.name}')">
+        <span style="width:22px;height:22px;border-radius:50%;background:${o.bg_color};color:${o.color};display:inline-grid;place-items:center;font-size:9px;font-weight:700">${ini(o.name)}</span>
+        ${o.name}
+      </div>`).join('');
+    } else dropdown.style.display='none';
+  } else {
+    dropdown.style.display='none';
+    _mentionStart=-1;
+  }
+}
+
+function insertMention(name){
+  const input = document.getElementById('commentInput');
+  const val = input.value;
+  const before = val.slice(0, _mentionStart);
+  const after = val.slice(input.selectionStart);
+  input.value = before + '@' + name + ' ' + after;
+  input.focus();
+  document.getElementById('mentionDropdown').style.display='none';
+  _mentionStart=-1;
+}
+
+async function submitComment(){
+  const input = document.getElementById('commentInput');
+  const content = input.value.trim();
+  if(!content) return;
+  if(!_currentItemId){toast('No item selected','err');return;}
+  // Manager can also send mentions
+  // Extract mentions
+  const mentions = [...new Set((content.match(/@(\w+)/g)||[]).map(m=>m.slice(1)))];
+  const validMentions = mentions.filter(m=>OFF.find(o=>o.name===m));
+  const obj = {
+    author: CU,
+    content,
+    mentions: validMentions,
+    created_at: new Date().toISOString()
+  };
+  if(_currentItemType==='project') obj.project_id = _currentItemId;
+  else obj.contract_id = _currentItemId;
+  try {
+    await sb.from('comments').insert([obj]);
+    input.value='';
+    // Send notifications to mentioned users
+    for(const name of validMentions){
+      if(name!==CU){
+        await sb.from('notifications').insert([{
+          recipient: name,
+          sender: CU,
+          message: `${CU} mentioned you in a comment on "${_currentItemTitle||'an item'}"`,
+          project_title: _currentItemTitle,
+          project_id: _currentItemType==='project'?_currentItemId:null,
+          is_read: false,
+          created_at: new Date().toISOString()
+        }]);
+      }
+    }
+    if(validMentions.length) toast('💬 Comment sent + '+validMentions.length+' notified');
+    else toast('💬 Comment sent');
+  } catch(e){ toast('Comments table not ready — run SQL setup','err'); }
+}
+
+// ══════════════════════════════════════════════
+//  NOTIFICATIONS
+// ══════════════════════════════════════════════
+let _unreadCount = 0;
+
+async function loadNotifications(){
+  if(!CU) return;
+  const notifTarget = ADM?'Manager':CU;
+  try {
+    const {data} = await sb.from('notifications').select('*').eq('recipient',notifTarget).order('created_at',{ascending:false}).limit(50);
+    const notifs = data||[];
+    _unreadCount = notifs.filter(n=>!n.is_read).length;
+    updateBadge();
+    renderNotifications(notifs);
+  } catch(e){ console.log('notifications not ready'); }
+}
+
+function updateBadge(){
+  const badge = document.getElementById('notifBadge');
+  if(!badge) return;
+  if(_unreadCount>0){
+    badge.style.display='inline-flex';
+    badge.textContent = _unreadCount>9?'9+':String(_unreadCount);
+    // Pulse animation
+    badge.style.animation='none';
+    setTimeout(()=>badge.style.animation='pulse 1s 3',10);
+  } else {
+    badge.style.display='none';
+  }
+}
+
+function renderNotifications(notifs){
+  const el = document.getElementById('notifList');
+  document.getElementById('notifSubtxt').textContent = _unreadCount+' unread notifications';
+  if(!notifs.length){ el.innerHTML='<div class="notif-empty">🔔 No notifications yet</div>'; return; }
+  el.innerHTML = notifs.map(n=>{
+    const dt = new Date(n.created_at);
+    const when = dt.toLocaleDateString('en-SA',{month:'short',day:'numeric'})+' '+dt.toLocaleTimeString('en-SA',{hour:'2-digit',minute:'2-digit'});
+    return`<div class="notif-row ${n.is_read?'read':'unread'}" onclick="openNotif('${n.id}','${n.project_id||''}')">
+      <div class="notif-icon">@</div>
+      <div style="flex:1">
+        <div class="notif-msg">${n.message}</div>
+        <div class="notif-time">${when}</div>
+      </div>
+      ${!n.is_read?'<div style="width:8px;height:8px;border-radius:50%;background:var(--acc2);flex-shrink:0;margin-top:6px"></div>':''}
+    </div>`;
+  }).join('');
+}
+
+async function openNotif(notifId, projectId){
+  // Mark as read
+  try { await sb.from('notifications').update({is_read:true}).eq('id',notifId); } catch(e){}
+  await loadNotifications();
+  // Navigate to project if exists
+  if(projectId){
+    const p = DATA.find(x=>x.id===projectId);
+    if(p){ showPage('proj',document.getElementById('n-proj')); openPDr(projectId); }
+  }
+}
+
+async function markAllRead(){
+  if(!CU) return;
+  const rcp=ADM?'Manager':CU;
+  try { await sb.from('notifications').update({is_read:true}).eq('recipient',rcp).eq('is_read',false); }
+  catch(e){ toast('Notifications table not ready — run SQL setup','err'); return; }
+  await loadNotifications();
+  toast('All marked as read ✓');
+}
+
+async function rNotifs(){
+  await loadNotifications();
+}
+
+// Subscribe to new notifications in real-time
+function subscribeNotifications(){
+  if(!CU) return;
+  const notifName=ADM?'Manager':CU;
+  sb.channel('notifs-'+notifName)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:`recipient=eq.${CU}`}, async(payload)=>{
+      await loadNotifications();
+      const n = payload.new;
+      toast('🔔 '+n.message);
+    }).subscribe();
+}
+
+// START
+init();
+</script>
+</body>
+</html>
