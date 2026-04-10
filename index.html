@@ -1622,7 +1622,7 @@ function openOffMo(){
 }
 function openEditOff(name){
   editOffName=name;document.getElementById('offMoTitle').textContent='Edit Officer';
-  document.getElementById('of-name').value=name;document.getElementById('of-name').disabled=true;
+  document.getElementById('of-name').value=name;document.getElementById('of-name').disabled=false;
   document.getElementById('offDel').style.display='block';
   const o=OFF.find(x=>x.name===name);
   if(o){selColor=o.color;selBg=o.bg_color;document.querySelectorAll('.cpick').forEach(c=>c.classList.toggle('sel',c.dataset.c===o.color));}
@@ -1634,10 +1634,29 @@ async function saveOff(){
   const name=document.getElementById('of-name').value.trim();
   if(!name){toast('Name required','err');return;}
   let err;
-  if(editOffName){const{error}=await sb.from('officers').update({color:selColor,bg_color:selBg}).eq('name',editOffName);err=error;}
-  else{if(OFF.find(o=>o.name===name)){toast('Officer exists','err');return;}const{error}=await sb.from('officers').insert([{name,color:selColor,bg_color:selBg,is_default:false}]);err=error;}
+  if(editOffName){
+    // Rename: update officer name + all related data
+    const nameChanged=name!==editOffName;
+    const{error}=await sb.from('officers').update({name,color:selColor,bg_color:selBg}).eq('name',editOffName);
+    err=error;
+    if(!err&&nameChanged){
+      // Update all projects assigned to old name
+      await sb.from('projects').update({business_owner:name}).eq('business_owner',editOffName).catch(()=>{});
+      // Rename password entry
+      const{data:oldPass}=await sb.from('passwords').select('pass').eq('name',editOffName).single().catch(()=>({data:null}));
+      if(oldPass){
+        await sb.from('passwords').delete().eq('name',editOffName).catch(()=>{});
+        await sb.from('passwords').upsert({name,pass:oldPass.pass,updated_at:new Date().toISOString()},{onConflict:'name'}).catch(()=>{});
+      }
+      toast('Officer renamed and all cases updated ✓');
+    }
+  }else{
+    if(OFF.find(o=>o.name===name)){toast('Officer already exists','err');return;}
+    const{error}=await sb.from('officers').insert([{name,color:selColor,bg_color:selBg,is_default:false}]);
+    err=error;
+  }
   if(err){toast('Error: '+err.message,'err');return;}
-  // If new officer, add default password
+  // New officer: add default password
   if(!editOffName){
     await sb.from('passwords').upsert({name,pass:'1234',updated_at:new Date().toISOString()},{onConflict:'name'}).catch(()=>{});
   }
@@ -1646,10 +1665,9 @@ async function saveOff(){
 }
 async function delOff(){
   if(!editOffName)return;
-  const o=OFF.find(x=>x.name===editOffName);
-  if(o?.is_default){toast('Cannot remove default officers','err');return;}
-  if(!confirm('Remove "'+editOffName+'"?'))return;
+  if(!confirm('Remove "'+editOffName+'" and all their data?'))return;
   await sb.from('officers').delete().eq('name',editOffName);
+  await sb.from('passwords').delete().eq('name',editOffName).catch(()=>{});
   const{data}=await sb.from('officers').select('*').order('created_at');
   if(data){OFF=data;buildLoginCards();}rOfficers();closeOffMo();toast('Officer removed');
 }
