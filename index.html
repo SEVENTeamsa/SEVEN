@@ -388,7 +388,7 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
     <div class="divid">or</div>
     <select class="lsel" id="adminSel" onchange="onAdminSelChange()">
       <option value="">— Select —</option>
-      <option value="manager">Manager Account</option>
+      <option value="manager">Mansour (Manager)</option>
     </select>
     <div id="adminPassWrap" style="display:none">
       <div class="pass-wrap">
@@ -442,7 +442,7 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
   </header>
 
 
-  <div class="kpi-strip" id="mainKpiStrip">
+  <div class="kpi-strip" id="mainKpiStrip" style="display:none">
     <div class="kpi blue"><div class="kpi-l">Total Cases</div><div class="kpi-v" id="kT">—</div><div class="kpi-s">all projects</div></div>
     <div class="kpi green"><div class="kpi-l">Done</div><div class="kpi-v" id="kD">—</div><div class="kpi-s" id="kDp">—</div></div>
     <div class="kpi orange"><div class="kpi-l">Ongoing</div><div class="kpi-v" id="kO">—</div><div class="kpi-s">active</div></div>
@@ -884,7 +884,6 @@ let charts={};
 const DEF_OFF=[
   {name:'Saud',color:'#2563eb',bg_color:'rgba(37,99,235,.18)',is_default:true},
   {name:'Mohammed',color:'#10b981',bg_color:'rgba(16,185,129,.18)',is_default:true},
-  {name:'Mansour',color:'#f59e0b',bg_color:'rgba(245,158,11,.18)',is_default:true},
   {name:'Shaykhah',color:'#8b5cf6',bg_color:'rgba(139,92,246,.18)',is_default:true},
   {name:'Sara',color:'#f97316',bg_color:'rgba(249,115,22,.18)',is_default:true},
 ];
@@ -1317,10 +1316,12 @@ function rMine(){
   if(IS_MGR){
     const av=document.getElementById('mpAv');av.style.background='#f59e0b';av.style.color='#fff';av.textContent='MG';
     document.getElementById('mpNm').textContent='All Cases';
+    document.getElementById('mpRole').textContent='Manager View';
   }else{
     const o=OFF.find(x=>x.name===CU)||{name:CU,color:'#64748b',bg_color:'rgba(100,116,139,.18)'};
     const av=document.getElementById('mpAv');av.style.background=o.bg_color;av.style.color=o.color;av.textContent=ini(CU);
     document.getElementById('mpNm').textContent=CU;
+    document.getElementById('mpRole').textContent=getJobTitle(CU);
   }
   document.getElementById('mpT').textContent=mine.length;
   document.getElementById('mpD').textContent=mine.filter(p=>p.case_status==='Done').length;
@@ -1916,7 +1917,6 @@ function getJobTitle(name){
     'Mohamed':'Associate — Operative Procurement',
     'Sara':'Associate — Operative Procurement',
     'Shaykhah':'Senior Associate — Operative Procurement',
-    'Mansour':'Associate — Operative Procurement',
   };
   return titles[name]||'Procurement Officer';
 }
