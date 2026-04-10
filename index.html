@@ -1061,7 +1061,7 @@ function doLogout(){
   document.getElementById('s-site').classList.add('active');
   document.getElementById('sitePassInput').value='';
   document.getElementById('sitePassErr').style.display='none';
-  if(!IS_MGR&&CU)sb.from('presence').delete().eq('officer_name',CU).catch(()=>{});
+  const pName=IS_MGR?'Manager':CU;if(pName)sb.from('presence').delete().eq('officer_name',pName).catch(()=>{});
   clearInterval(presTimer);clearInterval(pollTimer);
   Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};
   sb.getChannels().forEach(ch=>sb.removeChannel(ch));
@@ -1135,14 +1135,13 @@ function startApp(){
   calcKPIs();calcAlerts();
   if(IS_MGR)nav('dash',document.getElementById('n-dash'));
   else nav('mine',document.getElementById('n-mine'));
-  // Presence
-  if(!IS_MGR){
-    sb.from('presence').upsert({officer_name:CU,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
-    presTimer=setInterval(async()=>{
-      await sb.from('presence').upsert({officer_name:CU,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
-      loadOnline();
-    },15000);
-  }
+  // Presence — all users register
+  const myPresName=IS_MGR?'Manager':CU;
+  sb.from('presence').upsert({officer_name:myPresName,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
+  presTimer=setInterval(async()=>{
+    await sb.from('presence').upsert({officer_name:myPresName,last_seen:new Date().toISOString()},{onConflict:'officer_name'}).catch(()=>{});
+    loadOnline();
+  },15000);
   loadOnline();
   sb.channel('pres-ch').on('postgres_changes',{event:'*',schema:'public',table:'presence'},()=>loadOnline()).subscribe();
   sb.channel('proj-ch').on('postgres_changes',{event:'*',schema:'public',table:'projects'},async()=>{await reloadProj();toast('🔄 Updated');}).subscribe();
