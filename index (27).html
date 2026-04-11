@@ -497,6 +497,74 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
   /* PWA PROMPT */
   #pwaPrompt{bottom:16px;width:calc(100vw - 24px);left:12px;transform:none}
 }
+
+/* ══ MOBILE VIEW MODE ══ */
+body.mobile-view .topbar{padding:0 10px;gap:6px}
+body.mobile-view .ttxt{font-size:12px}
+body.mobile-view .tsub{display:none}
+body.mobile-view .tbadge{width:28px;height:28px;font-size:11px}
+body.mobile-view .nbtn span{display:none}
+body.mobile-view .nbtn{padding:5px 8px}
+body.mobile-view .uname{display:none}
+body.mobile-view .udot{width:24px;height:24px}
+
+body.mobile-view .kpi-strip{grid-template-columns:1fr 1fr}
+body.mobile-view .kpi{padding:10px 12px}
+body.mobile-view .kpi-v{font-size:16px}
+
+body.mobile-view .dw{padding:10px}
+body.mobile-view .dh h1{font-size:15px}
+body.mobile-view .dh>div:last-child button{font-size:11px!important;padding:6px 10px!important}
+body.mobile-view .kpi-row{grid-template-columns:1fr 1fr;gap:8px}
+body.mobile-view .kpi-mini-v{font-size:15px}
+body.mobile-view .charts-grid{grid-template-columns:1fr!important}
+body.mobile-view .dgrid{grid-template-columns:1fr}
+body.mobile-view .chart-widget{resize:none}
+
+body.mobile-view .toolbar{padding:8px 10px;flex-wrap:wrap;gap:6px}
+body.mobile-view .srch{max-width:100%!important;min-width:100%!important;flex:0 0 100%}
+body.mobile-view .fsel{flex:1;font-size:11px}
+body.mobile-view .add-btn{font-size:11px;padding:7px 10px}
+
+body.mobile-view .tabs-bar{overflow-x:auto;flex-wrap:nowrap;padding:6px 10px 0}
+body.mobile-view .tab{white-space:nowrap;flex-shrink:0;font-size:11px}
+
+body.mobile-view .oh{padding:10px}
+body.mobile-view .oav-lg{width:34px;height:34px;font-size:13px}
+body.mobile-view .okpis{grid-template-columns:repeat(3,1fr)}
+body.mobile-view .okpi{padding:8px 8px}
+body.mobile-view .okv{font-size:14px}
+body.mobile-view .okl{font-size:8px}
+
+body.mobile-view .tbl-wrap{margin:8px 10px;overflow-x:auto}
+body.mobile-view table{min-width:480px}
+body.mobile-view thead th{padding:7px 9px;font-size:9px}
+body.mobile-view td{padding:8px 9px;font-size:11px}
+body.mobile-view .subj{font-size:11px}
+
+body.mobile-view .mo{align-items:flex-end;padding:0}
+body.mobile-view .modal{width:100%!important;max-width:100%!important;border-radius:16px 16px 0 0!important;max-height:88vh;overflow-y:auto}
+body.mobile-view .mhdr{border-radius:16px 16px 0 0!important}
+body.mobile-view .fg{grid-template-columns:1fr!important}
+body.mobile-view .fg1.full{grid-column:1}
+
+body.mobile-view .drawer{width:100%!important;max-width:100%!important;border-left:none;border-radius:16px 16px 0 0;top:auto;height:88vh}
+body.mobile-view .dhdr{border-radius:16px 16px 0 0}
+body.mobile-view .dg{grid-template-columns:1fr}
+
+body.mobile-view .abar{overflow-x:auto;flex-wrap:nowrap;padding:7px 10px}
+body.mobile-view .achip{white-space:nowrap;flex-shrink:0}
+
+body.mobile-view #vSubTabs{overflow-x:auto;flex-wrap:nowrap;padding:7px 10px}
+body.mobile-view .v-sub-chip{white-space:nowrap;flex-shrink:0}
+
+body.mobile-view #officerCards{grid-template-columns:1fr!important}
+body.mobile-view .toast{left:10px;right:10px;max-width:unset}
+
+body.mobile-view .s7-mobile-badge{background:rgba(37,99,235,.2);color:var(--acc3)}
+#mobileViewBtn.active{background:rgba(37,99,235,.15);border-color:var(--acc2)}
+#mobileViewBtn.active svg{stroke:var(--acc3)}
+
 </style>
 </head>
 <body>
@@ -583,6 +651,9 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg><span>Officers</span>
       </button>
     </nav>
+    <button class="theme-btn" id="mobileViewBtn" onclick="toggleMobileView()" title="Mobile view">
+      <svg id="mobileViewIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><line x1="12" y1="18" x2="12" y2="18.01"/></svg>
+    </button>
     <button class="theme-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark">
       <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
     </button>
