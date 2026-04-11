@@ -658,13 +658,10 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
       </div>
       <div id="vSubTabs" style="display:flex;gap:6px;flex-wrap:wrap;padding:10px 20px;background:var(--s1);border-bottom:1px solid var(--b1)"></div>
       <div class="toolbar">
-        <div class="srch" style="max-width:340px;flex:2">
+        <div class="srch" style="max-width:380px;flex:2">
           <svg class="si" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input type="text" id="vSrch" placeholder="Search vendor name or email…" oninput="rVendors()"/>
         </div>
-        <select class="fsel" id="vCat" onchange="rVendors()">
-          <option value="">All Sub-categories</option>
-        </select>
         <span class="rct" id="vCt">—</span>
       </div>
       <div class="tbl-wrap">
@@ -2033,6 +2030,7 @@ async function loadVendors(type){
     document.getElementById('vBody').innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">⚠️</div><div class="empty-t">Failed to load vendors</div></div></td></tr>';
     return;
   }
+  populateVCat();
   rVendors();
 }
 
