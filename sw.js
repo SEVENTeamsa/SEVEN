@@ -1,8 +1,5 @@
-const CACHE = 'proctrack-v1';
-const ASSETS = [
-  '/SEVEN/',
-  '/SEVEN/index.html',
-];
+const CACHE = 'proctrack-v2';
+const ASSETS = ['/', '/index.html', '/manifest.json', '/icon-192.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(
@@ -21,13 +18,12 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // Network first for API calls, cache first for assets
   if(e.request.url.includes('supabase.co')) return;
   e.respondWith(
     fetch(e.request)
       .then(res => {
         const clone = res.clone();
-        caches.open(CACHE).then(cache => cache.put(e.request, clone)).catch(() => {});
+        caches.open(CACHE).then(c => c.put(e.request, clone)).catch(() => {});
         return res;
       })
       .catch(() => caches.match(e.request))
