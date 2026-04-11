@@ -1202,7 +1202,7 @@ function nav(page,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+page).classList.add('active');
   if(page==='mine')rMine();
-  if(page==='vendors'){vType='mkt';vData=[];vLoaded={mkt:false,it:false};document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.toggle('active',b.id==='vtab-mkt'));populateVCat();loadVendors('mkt');}
+  if(page==='vendors'){vType='mkt';vPage=1;document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.toggle('active',b.id==='vtab-mkt'));populateVCat();loadVendors('mkt');}
   if(page==='cont'){calcAlerts();rCont();}
   if(page==='dash')rDash();
   if(page==='officers')rOfficers();
@@ -2004,11 +2004,11 @@ const IT_COLORS={
   'TELECOMMUNICATION':['#ec4899','rgba(236,72,153,.15)'],
 };
 
-let vType='mkt', vPage=1, vData=[], vLoaded={mkt:false,it:false};
+let vType='mkt', vPage=1, vData=[];
 const V_PER_PAGE=50;
 
 async function loadVendors(type){
-  if(vLoaded[type])return;
+  vData=[];
   document.getElementById('vBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
   const catMap={'mkt':'Marketing','it':'IT'};
   const vtype=catMap[type]||'Marketing';
@@ -2022,7 +2022,6 @@ async function loadVendors(type){
       from+=chunk;
     }
     vData=all;
-    vLoaded[type]=true;
     document.getElementById('vCt').textContent=all.length.toLocaleString()+' vendors';
   }catch(e){
     document.getElementById('vBody').innerHTML='<tr><td colspan="6"><div class="empty"><div class="empty-i">⚠️</div><div class="empty-t">Failed to load vendors</div></div></td></tr>';
@@ -2032,10 +2031,11 @@ async function loadVendors(type){
 }
 
 function vTab(t,btn){
-  vType=t;vPage=1;vData=[];
+  vType=t;vPage=1;
   document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('vSrch').value='';
+  document.getElementById('vCat').value='';
   populateVCat();
   loadVendors(t);
 }
