@@ -355,6 +355,112 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
 .v-sub-chip:hover{border-color:var(--b2);color:var(--t2)}
 .v-sub-chip.active{border-color:var(--acc2);background:rgba(37,99,235,.08);color:var(--acc3);font-weight:600}
 
+
+/* ══ MOBILE RESPONSIVE ══ */
+@media(max-width:768px){
+
+  /* TOPBAR */
+  .topbar{padding:0 12px;gap:8px;height:52px}
+  .ttxt{font-size:12px}.tsub{display:none}
+  .tnav{gap:1px}
+  .nbtn{padding:5px 8px;font-size:11px}
+  .nbtn svg{width:15px;height:15px}
+  .nbtn span{display:none}
+  .uchip{padding:4px 8px;gap:5px}
+  .uname{display:none}
+  .theme-btn{width:28px;height:28px}
+
+  /* KPI STRIP */
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .kpi{padding:10px 12px}
+  .kpi-v{font-size:17px}
+  .kpi-l{font-size:9px}
+
+  /* DASHBOARD */
+  .dw{padding:12px}
+  .dh{flex-direction:column;gap:8px}
+  .dh h1{font-size:16px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px}
+  .kpi-mini-v{font-size:16px}
+  .charts-grid{grid-template-columns:1fr}
+  .chart-widget{min-width:unset}
+  .dgrid{grid-template-columns:1fr}
+
+  /* TOOLBAR */
+  .toolbar{padding:8px 12px;gap:6px}
+  .srch{max-width:100%!important;flex:1}
+  .fsel{font-size:11px;padding:6px 8px}
+  .add-btn{padding:6px 10px;font-size:11px}
+  .add-btn span{display:none}
+
+  /* TABS */
+  .tabs-bar{padding:8px 12px 0;gap:2px;overflow-x:auto;flex-wrap:nowrap}
+  .tab{padding:6px 10px;font-size:11px;white-space:nowrap}
+
+  /* TABLE — convert to cards on mobile */
+  .tbl-wrap{margin:10px 12px;overflow-x:auto}
+  table{font-size:11px}
+  thead th{padding:7px 8px;font-size:9px}
+  td{padding:8px}
+
+  /* MY CASES HEADER */
+  .oh{padding:12px}
+  .oav-lg{width:36px;height:36px;font-size:13px}
+  .okpis{grid-template-columns:repeat(3,1fr)}
+  .okpi{padding:9px 10px}
+  .okv{font-size:15px}
+  .okl{font-size:8.5px}
+
+  /* MODAL */
+  .modal{width:95vw!important;max-height:85vh}
+  .mbody{padding:14px}
+  .fg{grid-template-columns:1fr!important}
+  .fg1.full{grid-column:1}
+  .mhdr{padding:12px 14px}
+  .mftr{padding:10px 14px;flex-wrap:wrap;gap:6px}
+  .bsav,.bcan,.bdel{font-size:12px;padding:8px 14px}
+
+  /* DRAWER */
+  .drawer{width:100vw!important;max-width:100vw}
+  .dg{grid-template-columns:1fr}
+  .di.full{grid-column:1}
+  .dbody{padding:14px}
+
+  /* VENDORS PAGE */
+  #vSubTabs{padding:8px 12px;gap:5px}
+  .v-sub-chip{padding:4px 10px;font-size:10px}
+
+  /* ALERTS BAR */
+  .abar{padding:8px 12px;gap:5px}
+  .achip{padding:5px 8px;font-size:10px}
+
+  /* NOTIFICATIONS */
+  .notif-row{padding:10px 12px}
+
+  /* OFFICERS */
+  #officerCards{grid-template-columns:1fr!important}
+
+  /* COMMENTS */
+  .comment-box{padding:12px}
+
+  /* HANDOVER MODAL */
+  #handoverMo .modal{width:95vw!important}
+
+  /* WIDGET BUTTONS */
+  .widget-hdr{flex-wrap:wrap}
+  .wbtn{width:18px;height:18px;font-size:9px}
+
+  /* PWA PROMPT */
+  #pwaPrompt{bottom:20px;width:92vw}
+}
+
+@media(max-width:400px){
+  .kpi-strip{grid-template-columns:repeat(2,1fr)}
+  .okpis{grid-template-columns:repeat(2,1fr)}
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .nbtn{padding:4px 6px}
+}
+
 </style>
 </head>
 <body>
