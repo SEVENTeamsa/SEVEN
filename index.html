@@ -648,8 +648,8 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
     <div class="page" id="page-vendors">
       <!-- Tabs -->
       <div class="tabs-bar">
-        <button class="tab active" id="vtab-mkt" onclick="vTab('mkt',this)">📣 Marketing <span class="tc">943</span></button>
-        <button class="tab" id="vtab-it" onclick="vTab('it',this)">💻 IT <span class="tc">2,191</span></button>
+        <button class="tab active" id="vtab-mkt" onclick="vTab('mkt',this)">📣 Marketing <span class="tc" id="vt-mkt">943</span></button>
+        <button class="tab" id="vtab-it" onclick="vTab('it',this)">💻 IT <span class="tc" id="vt-it">2,184</span></button>
       </div>
       <div class="toolbar">
         <div class="srch" style="max-width:340px;flex:2">
@@ -1202,7 +1202,7 @@ function nav(page,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+page).classList.add('active');
   if(page==='mine')rMine();
-  if(page==='vendors'){populateVCat();vLoaded[vType]?rVendors():loadVendors(vType);}
+  if(page==='vendors'){vType='mkt';vData=[];vLoaded={mkt:false,it:false};document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.toggle('active',b.id==='vtab-mkt'));populateVCat();loadVendors('mkt');}
   if(page==='cont'){calcAlerts();rCont();}
   if(page==='dash')rDash();
   if(page==='officers')rOfficers();
@@ -1982,7 +1982,7 @@ function getJobTitle(name){
 // البيانات تُحمَّل من Supabase عند الطلب فقط
 
 const MKT_CATS=["Agency & Branding", "Media & Advertising", "Production & Print", "Research & Campaign", "Events", "Sponsorship & PR"];
-const IT_CATS=["SOFTWARE", "IT PROFESSIONAL SRV.", "HARDWARE", "TECHNICAL OFFICE SUP", "SUBSCRIPTIONS", "NETWORK", "TECHNICAL ACCESSORIE", "SURVEILLANCE AND CON", "TELECOMMUNICATION", "SMART DEVICES", "DATA ROOM SERVICES", "RENEWAL", "NIC"];
+const IT_CATS=["Software","Hardware","IT Services","Network & Telecom","Subscriptions & Renewal","Office & Surveillance"];
 
 const MKT_COLORS={
   'Agency & Branding':['#8b5cf6','rgba(139,92,246,.15)'],
@@ -2010,13 +2010,12 @@ const V_PER_PAGE=50;
 async function loadVendors(type){
   if(vLoaded[type])return;
   document.getElementById('vBody').innerHTML='<tr><td colspan="6" style="text-align:center;padding:30px"><div class="spinner" style="margin:0 auto"></div></td></tr>';
+  const catMap={'mkt':'Marketing','it':'IT'};
+  const vtype=catMap[type]||'Marketing';
   try{
-    const vtype=type==='mkt'?'Marketing':'IT';
-    let all=[];
-    let from=0;
-    const chunk=1000;
+    let all=[],from=0,chunk=1000;
     while(true){
-      const{data,error}=await sb.from('vendors').select('vendor_number,name,category,subcategory,specialty,email,phone').eq('type',vtype).range(from,from+chunk-1);
+      const{data,error}=await sb.from('vendors').select('vendor_number,name,category,subcategory,specialty,email,phone').eq('category',vtype).range(from,from+chunk-1);
       if(error||!data||!data.length)break;
       all=[...all,...data];
       if(data.length<chunk)break;
@@ -2033,12 +2032,12 @@ async function loadVendors(type){
 }
 
 function vTab(t,btn){
-  vType=t;vPage=1;
+  vType=t;vPage=1;vData=[];
   document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('vSrch').value='';
   populateVCat();
-  vLoaded[t]?rVendors():loadVendors(t);
+  loadVendors(t);
 }
 
 function populateVCat(){
@@ -2055,7 +2054,7 @@ function rVendors(){
 
   let d=vData;
   if(q)d=d.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.vendor_number||'').includes(q));
-  if(cat)d=d.filter(v=>v.category===cat);
+  if(cat)d=d.filter(v=>v.subcategory===cat);
 
   const total=d.length;
   const pages=Math.max(1,Math.ceil(total/V_PER_PAGE));
