@@ -1124,19 +1124,23 @@ body.mobile-view .s7-mobile-badge{background:rgba(37,99,235,.2);color:var(--acc3
 
 <div class="toast" id="toast"></div>
 
-<!-- PWA Install Prompt -->
-<div id="pwaPrompt" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);z-index:9999;background:var(--s1);border:1px solid var(--acc2);border-radius:12px;padding:14px 18px;max-width:320px;width:90%;box-shadow:0 8px 30px rgba(0,0,0,.6);animation:su .3s ease">
-  <div style="display:flex;align-items:center;gap:12px">
-    <div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:grid;place-items:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0">P</div>
-    <div style="flex:1">
-      <div style="font-size:13px;font-weight:600;color:var(--t1)">Install ProcTrack</div>
-      <div style="font-size:11px;color:var(--t3);margin-top:2px">Add to your home screen</div>
+<!-- PWA Install Prompt — Full Screen First Visit -->
+<div id="pwaPrompt" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--s1);border:1px solid var(--b2);border-radius:20px;padding:32px 28px;max-width:380px;width:100%;text-align:center;animation:su .3s ease;box-shadow:0 20px 60px rgba(0,0,0,.8)">
+    <div style="width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,#2563eb,#1d4ed8);display:grid;place-items:center;margin:0 auto 18px;font-weight:800;font-size:28px;color:#fff;box-shadow:0 8px 24px rgba(37,99,235,.4)">P</div>
+    <div style="font-size:20px;font-weight:700;color:var(--t1);margin-bottom:8px">Install ProcTrack</div>
+    <div id="pwaPromptBody" style="font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:24px">Add the tracker to your home screen for quick access — works like a native app on your phone or desktop.</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button onclick="installPWA()" id="pwaInstallBtn" style="width:100%;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:13px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);box-shadow:0 4px 16px rgba(37,99,235,.4)">
+        📱 Install App
+      </button>
+      <button onclick="dismissPWA()" style="width:100%;background:var(--s3);border:1px solid var(--b2);color:var(--t2);padding:11px;border-radius:12px;font-size:13px;cursor:pointer;font-family:var(--font)">
+        Not now
+      </button>
+      <button onclick="neverShowPWA()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer;font-family:var(--font);padding:4px">
+        Don't show again
+      </button>
     </div>
-    <button onclick="dismissPWA()" style="background:none;border:none;color:var(--t3);font-size:18px;cursor:pointer;padding:4px">✕</button>
-  </div>
-  <div style="display:flex;gap:8px;margin-top:12px">
-    <button onclick="dismissPWA()" style="flex:1;background:var(--s3);border:1px solid var(--b2);color:var(--t2);padding:8px;border-radius:8px;font-size:12px;cursor:pointer;font-family:var(--font)">Not now</button>
-    <button onclick="installPWA()" style="flex:1;background:linear-gradient(135deg,#2563eb,#1d4ed8);border:none;color:#fff;padding:8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Install</button>
   </div>
 </div>
 <script>
@@ -2368,24 +2372,81 @@ function vPageGo(d){vPage+=d;rVendors();document.querySelector('#page-vendors .t
 // ══ PWA ══
 let deferredPrompt = null;
 
+// Capture install prompt on Android Chrome
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  // Show prompt after 3 seconds if not dismissed
-  setTimeout(() => {
-    if(deferredPrompt && !localStorage.getItem('pwaDismissed')) {
-      document.getElementById('pwaPrompt').style.display = 'block';
-    }
-  }, 3000);
 });
 
+// Show prompt on first visit — works on ALL browsers
+window.addEventListener('load', () => {
+  const dismissed = localStorage.getItem('pwaDismissed');
+  const installed = localStorage.getItem('pwaInstalled');
+  // Don't show if already dismissed with "never" or installed
+  if(dismissed === 'never' || installed) return;
+  // Show after 2 seconds on first visit
+  setTimeout(() => {
+    const el = document.getElementById('pwaPrompt');
+    if(!el) return;
+    // Update install button based on browser support
+    const installBtn = document.getElementById('pwaInstallBtn');
+    if(deferredPrompt) {
+      // Android Chrome — can auto-install
+      installBtn.textContent = '📱 Install App';
+    } else {
+      // iOS Safari or desktop — show manual instructions
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if(isIOS) {
+        installBtn.innerHTML = '📱 Add to Home Screen';
+        installBtn.onclick = showIOSInstructions;
+      } else {
+        installBtn.innerHTML = '💻 Install on Desktop';
+      }
+    }
+    el.style.display = 'flex';
+  }, 2000);
+
+  // Register service worker
+  if('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+});
+
+function showPWAPrompt() {
+  const el = document.getElementById('pwaPrompt');
+  if(el) el.style.display = 'flex';
+}
+
 async function installPWA() {
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  document.getElementById('pwaPrompt').style.display = 'none';
-  if(outcome === 'accepted') toast('App installed successfully ✓');
+  if(deferredPrompt) {
+    // Android Chrome
+    document.getElementById('pwaPrompt').style.display = 'none';
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if(outcome === 'accepted') {
+      localStorage.setItem('pwaInstalled', '1');
+      toast('App installed ✓');
+    }
+  } else {
+    // Desktop/iOS — show instructions
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if(isIOS) {
+      showIOSInstructions();
+    } else {
+      toast('Click the browser menu → Install ProcTrack');
+      dismissPWA();
+    }
+  }
+}
+
+function showIOSInstructions() {
+  document.getElementById('pwaPromptBody').innerHTML =
+    '<div style="font-size:13px;color:var(--t2);line-height:1.8;text-align:left">' +
+    '1. Tap the <strong style="color:var(--t1)">Share</strong> button 📤 at the bottom<br>' +
+    '2. Scroll down and tap <strong style="color:var(--t1)">Add to Home Screen</strong><br>' +
+    '3. Tap <strong style="color:var(--t1)">Add</strong>' +
+    '</div>';
 }
 
 function dismissPWA() {
@@ -2393,17 +2454,17 @@ function dismissPWA() {
   localStorage.setItem('pwaDismissed', '1');
 }
 
-window.addEventListener('appinstalled', () => {
-  toast('ProcTrack installed ✓');
+function neverShowPWA() {
   document.getElementById('pwaPrompt').style.display = 'none';
-});
-
-// Register service worker
-if('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
+  localStorage.setItem('pwaDismissed', 'never');
 }
+
+window.addEventListener('appinstalled', () => {
+  localStorage.setItem('pwaInstalled', '1');
+  if(document.getElementById('pwaPrompt'))
+    document.getElementById('pwaPrompt').style.display = 'none';
+  toast('ProcTrack installed ✓');
+});
 
 // ══ START ══
 init();
