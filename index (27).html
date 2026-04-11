@@ -2190,6 +2190,26 @@ async function doHandover(){
 }
 
 // ══ THEME ══
+
+// ══ MOBILE VIEW TOGGLE ══
+function toggleMobileView(){
+  const isOn=document.body.classList.toggle('mobile-view');
+  const btn=document.getElementById('mobileViewBtn');
+  if(btn)btn.classList.toggle('active',isOn);
+  localStorage.setItem('mobileView',isOn?'1':'0');
+  setTimeout(()=>Object.values(charts).forEach(c=>{try{c.resize();}catch(e){}}),100);
+  toast(isOn?'📱 Mobile view on':'🖥️ Desktop view on');
+}
+(function(){
+  if(localStorage.getItem('mobileView')==='1'){
+    document.body.classList.add('mobile-view');
+    window.addEventListener('DOMContentLoaded',()=>{
+      const btn=document.getElementById('mobileViewBtn');
+      if(btn)btn.classList.add('active');
+    });
+  }
+})();
+
 function toggleTheme(){
   const isLight=document.body.classList.toggle('light');
   localStorage.setItem('theme',isLight?'light':'dark');
