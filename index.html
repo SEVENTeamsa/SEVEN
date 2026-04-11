@@ -1679,7 +1679,9 @@ async function saveOff(){
   if(editOffName){
     // Rename: update officer name + all related data
     const nameChanged=name!==editOffName;
-    const{error}=await sb.from('officers').update({name,color:selColor,bg_color:selBg}).eq('name',editOffName);
+    // Only include name in update if it actually changed
+    const updateObj=nameChanged?{name,color:selColor,bg_color:selBg}:{color:selColor,bg_color:selBg};
+    const{error}=await sb.from('officers').update(updateObj).eq('name',editOffName);
     err=error;
     if(!err&&nameChanged){
       // Update all projects assigned to old name
