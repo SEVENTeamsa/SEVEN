@@ -343,6 +343,11 @@ td{padding:10px 12px;vertical-align:middle;color:var(--t2)}
 ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
 @media(max-width:900px){.kpi-strip,.okpis{grid-template-columns:repeat(3,1fr)}.dgrid,.charts-grid{grid-template-columns:1fr}.fg{grid-template-columns:1fr}.fg1.full{grid-column:1}}
 @media(max-width:600px){.kpi-strip{grid-template-columns:repeat(2,1fr)}.tnav .nbtn span{display:none}}
+
+.v-sub-chip{padding:5px 13px;border-radius:20px;border:1px solid var(--b1);background:transparent;color:var(--t3);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--font)}
+.v-sub-chip:hover{border-color:var(--b2);color:var(--t2)}
+.v-sub-chip.active{border-color:var(--acc2);background:rgba(37,99,235,.08);color:var(--acc3);font-weight:600}
+
 </style>
 </head>
 <body>
@@ -1202,7 +1207,7 @@ function nav(page,btn){
   if(btn)btn.classList.add('active');
   document.getElementById('page-'+page).classList.add('active');
   if(page==='mine')rMine();
-  if(page==='vendors'){vType='mkt';vPage=1;document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.toggle('active',b.id==='vtab-mkt'));populateVCat();loadVendors('mkt');}
+  if(page==='vendors'){vType='mkt';vPage=1;vSubCat='';document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.toggle('active',b.id==='vtab-mkt'));populateVCat();loadVendors('mkt');}
   if(page==='cont'){calcAlerts();rCont();}
   if(page==='dash')rDash();
   if(page==='officers')rOfficers();
@@ -2004,7 +2009,7 @@ const IT_COLORS={
   'TELECOMMUNICATION':['#ec4899','rgba(236,72,153,.15)'],
 };
 
-let vType='mkt', vPage=1, vData=[];
+let vType='mkt', vPage=1, vData=[], vSubCat='';
 const V_PER_PAGE=50;
 
 async function loadVendors(type){
@@ -2031,30 +2036,42 @@ async function loadVendors(type){
 }
 
 function vTab(t,btn){
-  vType=t;vPage=1;
+  vType=t;vPage=1;vSubCat='';
   document.querySelectorAll('#page-vendors .tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('vSrch').value='';
-  document.getElementById('vCat').value='';
   populateVCat();
   loadVendors(t);
 }
 
 function populateVCat(){
-  const sel=document.getElementById('vCat');
   const cats=vType==='mkt'?MKT_CATS:IT_CATS;
-  sel.innerHTML='<option value="">All Sub-categories</option>';
-  cats.forEach(c=>{const op=document.createElement('option');op.value=op.textContent=c;sel.appendChild(op);});
+  const wrap=document.getElementById('vSubTabs');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  cats.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='v-sub-chip'+(vSubCat===c?' active':'');
+    btn.textContent=c;
+    btn.onclick=()=>setVSub(c,btn);
+    wrap.appendChild(btn);
+  });
+}
+function setVSub(cat,btn){
+  vSubCat=vSubCat===cat?'':cat;
+  vPage=1;
+  document.querySelectorAll('.v-sub-chip').forEach(b=>b.classList.remove('active'));
+  if(vSubCat)btn.classList.add('active');
+  rVendors();
 }
 
 function rVendors(){
   const q=document.getElementById('vSrch').value.toLowerCase().trim();
-  const cat=document.getElementById('vCat').value;
   const colors=vType==='mkt'?MKT_COLORS:IT_COLORS;
 
   let d=vData;
-  if(q)d=d.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.vendor_number||'').includes(q));
-  if(cat)d=d.filter(v=>v.subcategory===cat);
+  if(q)d=d.filter(v=>(v.name||'').toLowerCase().includes(q)||(v.email||'').toLowerCase().includes(q)||(v.vendor_number||'').includes(q)||(v.specialty||'').toLowerCase().includes(q));
+  if(vSubCat)d=d.filter(v=>v.subcategory===vSubCat);
 
   const total=d.length;
   const pages=Math.max(1,Math.ceil(total/V_PER_PAGE));
